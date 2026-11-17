@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { obrona2v1Skrzydlo as sc } from '../scenarios/obrona2v1Skrzydlo'
-import { POINTS_CORRECT, choiceResult, currentStage, gameReducer, maxScore, startGame, stars } from './game'
+import { POINTS_CORRECT, choiceResult, currentStage, gameReducer, maxScore, points, startGame, stars } from './game'
 
 const correctId = (state) => currentStage(state).options.find((o) => o.correct).id
 const wrongId = (state) => currentStage(state).options.find((o) => !o.correct).id
@@ -16,7 +16,7 @@ describe('game flow', () => {
     expect(s.phase).toBe('intro')
     for (let i = 0; i < sc.stages.length; i++) {
       expect(s.stageIndex).toBe(i)
-      s = answer(s, correctId(s), { timerOn: false })
+      s = answer(s, correctId(s), { seconds: 0 })
       expect(s.phase).toBe('feedback')
       s = gameReducer(s, { type: 'NEXT' })
     }
@@ -46,8 +46,13 @@ describe('game flow', () => {
     expect(s.results[0].correct).toBe(false)
   })
 
+  it('the speed bonus shrinks with the time used', () => {
+    const half = answer(startGame(sc), correctId(startGame(sc)), { seconds: 20, timeMs: 10000 })
+    expect(half.score).toBe(POINTS_CORRECT + 25)
+  })
+
   it('fast correct decisions earn a speed bonus', () => {
-    const s = answer(startGame(sc), correctId(startGame(sc)), { timerOn: true, timeMs: 0 })
+    const s = answer(startGame(sc), correctId(startGame(sc)), { seconds: 25, timeMs: 0 })
     expect(s.score).toBe(maxScore(sc) / sc.stages.length)
   })
 
@@ -79,5 +84,31 @@ describe('game flow', () => {
   it('restart begins a new run from stage one', () => {
     const s = run(answer(startGame(sc), wrongId(startGame(sc))), { type: 'RESTART' })
     expect(s).toMatchObject({ stageIndex: 0, score: 0, results: [], runId: 1, phase: 'intro' })
+  })
+
+  it('grades: a weak decision earns part of the points and cannot move on', () => {
+    expect(points(3, null, 0)).toBe(100)
+    expect(points(1, null, 0)).toBe(33)
+    expect(points(0, 0, 25)).toBe(0)
+    expect(points(1, 0, 25)).toBe(33 + 17)
+  })
+
+  it('what-if: after the best answer the other answers can be watched, then back and on', () => {
+    let s = answer(startGame(sc), correctId(startGame(sc)))
+    const other = wrongId(s)
+    s = run(s, { type: 'WHATIF', optionId: other })
+    expect(s).toMatchObject({ phase: 'outcome', choice: { optionId: other, whatIf: true }, explored: [other] })
+    s = run(s, { type: 'OUTCOME_DONE' }, { type: 'BACK' })
+    expect(s.choice).toEqual(s.solved)
+    const scoreBefore = s.score
+    s = run(s, { type: 'NEXT' })
+    expect(s.stageIndex).toBe(1)
+    expect(s.score).toBe(scoreBefore)
+    expect(s.explored).toEqual([])
+  })
+
+  it('what-if is not available before the best answer is found', () => {
+    const s = answer(startGame(sc), wrongId(startGame(sc)))
+    expect(gameReducer(s, { type: 'WHATIF', optionId: correctId(s) })).toBe(s)
   })
 })

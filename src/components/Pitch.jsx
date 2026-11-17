@@ -28,8 +28,9 @@ function PitchMarkings() {
   )
 }
 
-function Player({ entity, pos }) {
-  const style = TEAM_STYLE[entity.team]
+function Player({ entity, pos, homeShirt, youLabel = 'TY' }) {
+  const style = entity.team === 'home' && homeShirt ? { fill: homeShirt.fill, stroke: homeShirt.text === '#ffffff' ? '#ffffff' : '#0f172a', text: homeShirt.text } : TEAM_STYLE[entity.team]
+  const labelW = Math.max(3.8, youLabel.length * 0.95 + 1.4)
   const down = pos.pose === 'down'
   return (
     <g transform={`translate(${pos.x} ${pos.y})`} data-player={entity.id}>
@@ -37,10 +38,10 @@ function Player({ entity, pos }) {
         <>
           <circle r={2.7} fill="none" stroke="#fde047" strokeWidth={0.35} className="you-ring" />
           {!down && (
-            <g transform="translate(0 -3.7)">
-              <rect x={-1.9} y={-0.95} width={3.8} height={1.9} rx={0.7} fill="#fde047" />
+            <g transform={`translate(0 ${pos.y < 9 ? 3.7 : -3.7})`}>
+              <rect x={-labelW / 2} y={-0.95} width={labelW} height={1.9} rx={0.7} fill="#fde047" />
               <text textAnchor="middle" dominantBaseline="central" fontSize={1.3} fontWeight={800} fill="#1f2937">
-                TY
+                {youLabel}
               </text>
             </g>
           )}
@@ -139,7 +140,7 @@ const caption = (c, i) => (
 /**
  * The pitch, players, ball and optional coaching drawings. Pure: draws exactly the `world` it is given.
  */
-export default function Pitch({ entities, world, highlights = [], captions = [], className = '', label }) {
+export default function Pitch({ entities, world, highlights = [], captions = [], className = '', label, homeShirt, youLabel }) {
   return (
     <div className={`relative ${className}`}>
       <svg
@@ -162,8 +163,9 @@ export default function Pitch({ entities, world, highlights = [], captions = [],
         {highlights.map((h, i) => (
           <HighlightShape key={i} h={h} world={world} />
         ))}
-        {entities.map((e) => (
-          <Player key={e.id} entity={e} pos={world.players[e.id]} />
+        {/* "TY" first, so nobody near them is hidden under the ring and label. */}
+        {[...entities].sort((a, b) => (b.you ? 1 : 0) - (a.you ? 1 : 0)).map((e) => (
+          <Player key={e.id} entity={e} pos={world.players[e.id]} homeShirt={homeShirt} youLabel={youLabel} />
         ))}
         <Ball ball={world.ball} />
         {highlights.map((h, i) => (

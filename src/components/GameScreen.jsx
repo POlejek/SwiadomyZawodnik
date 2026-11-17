@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { endState, eventsAt, stateAt } from '../engine/animation'
-import { DECISION_SECONDS, choiceResult, currentStage, gameReducer, maxScore, startGame, stars } from '../engine/game'
+import { GRADES, choiceResult, currentStage, gameReducer, maxScore, quality, singleStage, startGame, stars } from '../engine/game'
+import { prepareRun } from '../engine/variants'
+import { MoveIcon, iconFor } from '../icons'
+import { personalise, pitchName, shirtOf } from '../profile'
+import { buzz, canSpeak, playSound, speak, stopSpeaking } from '../sound'
 import { load, save } from '../storage'
 import Pitch from './Pitch'
 import { useClipPlayer } from './useClipPlayer'
@@ -16,30 +20,58 @@ function shuffle(list) {
   return a
 }
 
-export default function GameScreen({ scenario, timerOn, onExit }) {
-  const [state, dispatch] = useReducer(gameReducer, scenario, (s) => startGame(s))
+const toneOf = (grade) => GRADES[grade]?.tone ?? 'bad'
+
+/**
+ * One situation. With `single` ({ stageIndex }) it plays just that stage (daily training) and calls onSingleDone.
+ * Callbacks report progress: onDecision (first attempt of a stage), onWhatIfAll, onComplete (whole situation).
+ */
+export default function GameScreen({
+  scenario: baseScenario,
+  decisionSeconds,
+  onExit,
+  profile,
+  single,
+  sessionLabel,
+  onDecision,
+  onWhatIfAll,
+  onComplete,
+  onSingleDone,
+}) {
+  const timerOn = decisionSeconds > 0
+  // Every run is a fresh version: random cue variants and, half of the time, the mirrored side of the pitch.
+  const prepare = () => {
+    const run = prepareRun(baseScenario)
+    return single ? singleStage(run, single.stageIndex) : run
+  }
+  const [state, dispatch] = useReducer(gameReducer, null, () => startGame(prepare()))
+  const restart = () => dispatch({ type: 'START', scenario: prepare() })
+  const { scenario } = state
   const stage = currentStage(state)
-  const entities = scenario.entities
+  const entities = useMemo(() => personalise(scenario.entities, profile), [scenario.entities, profile])
+  const shirt = shirtOf(profile)
+  const youLabel = pitchName(profile)
   const result = choiceResult(stage, state.choice)
 
   // Which clip is playing, and from which world state it starts.
   const playing = state.phase === 'intro' || state.phase === 'outcome'
   const clip = state.phase === 'intro' ? stage.intro : state.phase === 'outcome' ? result.clip : null
   const clipStart = state.phase === 'intro' ? state.introStart : state.questionState
+  const playKey = `${state.runId}-${state.playId}-${state.phase}`
 
   const { t, skip } = useClipPlayer(clip, {
     active: playing,
-    playKey: `${state.runId}-${state.playId}-${state.phase}`,
+    playKey,
     speed: state.slow ? 0.5 : 1,
     hold: state.phase === 'outcome' ? 1.1 : 0.15,
     onEnd: () => dispatch({ type: state.phase === 'intro' ? 'INTRO_DONE' : 'OUTCOME_DONE' }),
   })
 
   const world = useMemo(() => {
-    if (playing && clip) return stateAt(clip, clipStart, entities, Math.min(t, clip.duration))
-    if (state.phase === 'feedback' || state.phase === 'summary') return endState(result?.clip, state.questionState, entities)
+    if (playing && clip) return stateAt(clip, clipStart, entities, Math.min(t, clip.duration), scenario.facingUp)
+    if (state.phase === 'feedback' || state.phase === 'summary') return endState(result?.clip, state.questionState, entities, scenario.facingUp)
     return state.questionState
-  }, [playing, clip, clipStart, entities, t, state.phase, state.questionState, result])
+  }, [playing, clip, clipStart, entities, t, state.phase, state.questionState, result, scenario.facingUp])
 
   // Each caption goes to the end of the pitch away from where the ball is when it appears.
   const placedEvents = useMemo(
@@ -47,13 +79,38 @@ export default function GameScreen({ scenario, timerOn, onExit }) {
       clip && {
         events: (clip.events ?? []).map((ev) => ({
           ...ev,
-          pos: stateAt(clip, clipStart, entities, ev.t).ball.y < 24 ? 'bottom' : 'top',
+          pos: stateAt(clip, clipStart, entities, ev.t, scenario.facingUp).ball.y < 24 ? 'bottom' : 'top',
         })),
       },
-    [clip, clipStart, entities],
+    [clip, clipStart, entities, scenario.facingUp],
   )
   const captions = playing && clip ? eventsAt(placedEvents, t) : []
   const highlights = state.phase === 'feedback' ? result.highlights : []
+
+  // Sounds: kick-off whistle, goals and fouls as they happen on the pitch, a short cue for the verdict.
+  const heard = useRef(new Set())
+  useEffect(() => {
+    if (state.phase === 'intro' && state.stageIndex === 0 && !heard.current.has(`ko-${state.runId}`)) {
+      heard.current.add(`ko-${state.runId}`)
+      playSound('whistle')
+    }
+  }, [state.phase, state.stageIndex, state.runId])
+  useEffect(() => {
+    for (const c of captions) {
+      const key = `${playKey}-${c.t}-${c.text}`
+      if (heard.current.has(key)) continue
+      heard.current.add(key)
+      if (c.text === 'GOL') playSound(c.tone === 'good' ? 'goalFor' : 'goalAgainst')
+      else if (c.text.startsWith('Faul')) playSound('whistle')
+    }
+  })
+  useEffect(() => {
+    if (state.phase !== 'feedback' || state.choice?.whatIf) return
+    const tone = toneOf(result.quality)
+    playSound(tone)
+    if (tone === 'bad') buzz(80)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.phase, state.playId])
 
   // Answers in random order every run, so players learn the football, not the button position.
   const options = useMemo(() => shuffle(stage.options), [stage, state.runId])
@@ -69,61 +126,83 @@ export default function GameScreen({ scenario, timerOn, onExit }) {
     const id = setInterval(() => {
       const ms = performance.now() - askedAt.current
       setElapsed(ms)
-      if (ms >= DECISION_SECONDS * 1000) {
+      if (ms >= decisionSeconds * 1000) {
         clearInterval(id)
+        stopSpeaking()
         dispatch({ type: 'TIMEOUT' })
       }
     }, 100)
     return () => clearInterval(id)
-  }, [state.phase, state.playId, timerOn])
+  }, [state.phase, state.playId, decisionSeconds, timerOn])
 
-  const choose = (optionId) =>
-    dispatch({ type: 'CHOOSE', optionId, timeMs: performance.now() - askedAt.current, timerOn })
+  const choose = (optionId) => {
+    stopSpeaking()
+    dispatch({ type: 'CHOOSE', optionId, timeMs: performance.now() - askedAt.current, seconds: decisionSeconds })
+  }
+  useEffect(() => () => stopSpeaking(), [])
 
   // Keyboard: 1–4 or A–D picks an answer.
   useEffect(() => {
     if (state.phase !== 'question') return undefined
     const onKey = (e) => {
       const k = e.key.toUpperCase()
-      const i = '1234'.includes(k) && k !== '' ? Number(k) - 1 : LETTERS.indexOf(k)
+      const i = k.length === 1 && '1234'.includes(k) ? Number(k) - 1 : LETTERS.indexOf(k)
       if (i >= 0 && i < options.length) choose(options[i].id)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   })
 
-  // Remember the best score.
+  // Progress: every first attempt, watching all the other outcomes, finishing the situation.
+  const reported = useRef(0)
+  useEffect(() => {
+    if (state.results.length < reported.current) reported.current = 0 // new run
+    for (const r of state.results.slice(reported.current)) onDecision?.({ ...r, scenarioId: baseScenario.id })
+    reported.current = state.results.length
+  }, [state.results, baseScenario.id, onDecision])
+  useEffect(() => {
+    if (state.solved && state.explored.length === stage.options.length - 1) onWhatIfAll?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.explored.length])
   useEffect(() => {
     if (state.phase !== 'summary') return
+    if (single) {
+      onSingleDone?.(state)
+      return
+    }
     const best = load(`best:${scenario.id}`, 0)
     if (state.score > best) save(`best:${scenario.id}`, state.score)
-  }, [state.phase, state.score, scenario.id])
+    onComplete?.(baseScenario.id, state.score, stars(state))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.phase, state.runId])
 
   if (state.phase === 'summary') {
-    return <Summary state={state} onRestart={() => dispatch({ type: 'RESTART' })} onExit={onExit} />
+    if (single) return null
+    return <Summary state={state} onRestart={restart} onExit={onExit} />
   }
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pb-8">
-      <TopBar scenario={scenario} state={state} onExit={onExit} />
+      <TopBar scenario={scenario} state={state} onExit={onExit} sessionLabel={sessionLabel} />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start">
         <div className="pitch-frame">
-          <Pitch entities={entities} world={world} highlights={highlights} captions={captions} />
-          <Legend />
+          <Pitch entities={entities} world={world} highlights={highlights} captions={captions} homeShirt={shirt} youLabel={youLabel} />
+          <Legend entities={entities} shirt={shirt} youLabel={youLabel} />
         </div>
         <section className="panel" aria-label="Decyzja">
           {state.phase === 'intro' && <Watching onSkip={skip} stage={stage} />}
           {state.phase === 'question' && (
-            <Question stage={stage} options={options} onChoose={choose} timerOn={timerOn} elapsed={elapsed} />
+            <Question stage={stage} options={options} onChoose={choose} seconds={decisionSeconds} elapsed={elapsed} />
           )}
           {state.phase === 'outcome' && <Playing result={result} choice={state.choice} slow={state.slow} onSkip={skip} />}
           {state.phase === 'feedback' && (
             <Feedback
+              key={`${state.playId}-${state.choice?.optionId}`}
               stage={stage}
+              state={state}
               result={result}
-              choice={state.choice}
-              tries={state.attempts[stage.id] ?? 0}
               last={state.stageIndex === scenario.stages.length - 1}
+              single={!!single}
               dispatch={dispatch}
             />
           )}
@@ -133,21 +212,25 @@ export default function GameScreen({ scenario, timerOn, onExit }) {
   )
 }
 
-function TopBar({ scenario, state, onExit }) {
+function stepClass(r) {
+  if (!r) return 'step-bad'
+  return { good: 'step-good', mid: 'step-mid', bad: 'step-bad' }[toneOf(r.quality)]
+}
+
+function TopBar({ scenario, state, onExit, sessionLabel }) {
   return (
     <header className="flex items-center gap-3 py-4">
       <button type="button" onClick={onExit} className="btn-ghost" aria-label="Wróć do listy sytuacji">
         ←
       </button>
       <div className="min-w-0 flex-1">
-        <p className="eyebrow">{scenario.category}</p>
+        <p className="eyebrow">{sessionLabel ?? scenario.category}</p>
         <h1 className="truncate text-lg font-extrabold leading-tight text-white sm:text-xl">{scenario.title}</h1>
       </div>
       <ol className="flex items-center gap-1.5" aria-label="Etapy">
         {scenario.stages.map((s, i) => {
           const r = state.results.find((x) => x.stageId === s.id)
-          const cls =
-            i === state.stageIndex ? 'step-current' : r ? (r.correct ? 'step-good' : 'step-bad') : i < state.stageIndex ? 'step-bad' : 'step-todo'
+          const cls = i === state.stageIndex ? 'step-current' : i < state.stageIndex ? stepClass(r) : 'step-todo'
           return (
             <li key={s.id} className={`step ${cls}`} title={s.title}>
               <span className="sr-only">
@@ -157,29 +240,40 @@ function TopBar({ scenario, state, onExit }) {
           )
         })}
       </ol>
-      <div className="score" aria-label={`Punkty: ${state.score}`}>
+      {!scenario.single && <div className="score" aria-label={`Punkty: ${state.score}`}>
         <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">pkt</span>
         <span className="tabular-nums">{state.score}</span>
-      </div>
+      </div>}
     </header>
   )
 }
 
-function Legend() {
+function Legend({ entities, shirt, youLabel }) {
+  const you = entities.find((e) => e.you)
+  const has = (team) => entities.some((e) => e.team === team && !e.you)
   return (
     <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-xs text-slate-400">
       <span className="flex items-center gap-1.5">
-        <i className="dot bg-blue-600 ring-2 ring-yellow-300" /> Ty (nr 4)
+        <i className="dot ring-2 ring-yellow-300" style={{ background: shirt.fill }} /> {youLabel === 'TY' ? 'Ty' : youLabel} (nr {you.number})
       </span>
-      <span className="flex items-center gap-1.5">
-        <i className="dot bg-blue-600" /> Twoja drużyna
-      </span>
+      {has('home') && (
+        <span className="flex items-center gap-1.5">
+          <i className="dot" style={{ background: shirt.fill }} /> Twoja drużyna
+        </span>
+      )}
       <span className="flex items-center gap-1.5">
         <i className="dot bg-red-600" /> Rywale
       </span>
-      <span className="flex items-center gap-1.5">
-        <i className="dot bg-yellow-400" /> Bramkarz
-      </span>
+      {has('homeGK') && (
+        <span className="flex items-center gap-1.5">
+          <i className="dot bg-yellow-400" /> Twój bramkarz
+        </span>
+      )}
+      {has('awayGK') && (
+        <span className="flex items-center gap-1.5">
+          <i className="dot bg-gray-900 ring-1 ring-slate-300" /> Bramkarz rywali
+        </span>
+      )}
     </div>
   )
 }
@@ -189,7 +283,7 @@ function Watching({ stage, onSkip }) {
     <div className="space-y-4">
       <p className="eyebrow">{stage.title}</p>
       <p className="text-lg font-semibold text-slate-200">Obserwuj sytuację…</p>
-      <p className="text-sm text-slate-400">Za chwilę akcja się zatrzyma i podejmiesz decyzję.</p>
+      <p className="text-sm text-slate-400">Patrz, co robią rywale. Za chwilę akcja się zatrzyma i podejmiesz decyzję.</p>
       <button type="button" className="btn-secondary" onClick={onSkip}>
         Pomiń animację
       </button>
@@ -197,13 +291,22 @@ function Watching({ stage, onSkip }) {
   )
 }
 
-function Question({ stage, options, onChoose, timerOn, elapsed }) {
-  const left = Math.max(0, DECISION_SECONDS - elapsed / 1000)
-  const pct = (left / DECISION_SECONDS) * 100
+function Question({ stage, options, onChoose, seconds, elapsed }) {
+  const timerOn = seconds > 0
+  const left = Math.max(0, seconds - elapsed / 1000)
+  const pct = timerOn ? (left / seconds) * 100 : 0
+  const readAloud = () => speak([stage.question, ...options.map((o, i) => `${LETTERS[i]}. ${o.label}.`)].join(' '))
   return (
     <div className="space-y-4">
       <div>
-        <p className="eyebrow">{stage.title}</p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="eyebrow">{stage.title}</p>
+          {canSpeak() && (
+            <button type="button" className="btn-chip" onClick={readAloud} aria-label="Przeczytaj pytanie na głos">
+              <span aria-hidden>🔊</span> Przeczytaj
+            </button>
+          )}
+        </div>
         <h2 className="mt-1 text-lg font-bold leading-snug text-white sm:text-xl">{stage.question}</h2>
       </div>
       {timerOn && (
@@ -220,7 +323,8 @@ function Question({ stage, options, onChoose, timerOn, elapsed }) {
         {options.map((o, i) => (
           <button key={o.id} type="button" className="answer" onClick={() => onChoose(o.id)}>
             <span className="answer-key">{LETTERS[i]}</span>
-            <span>{o.label}</span>
+            <span className="flex-1">{o.label}</span>
+            {iconFor(o) && <MoveIcon name={iconFor(o)} className="h-6 w-6 shrink-0 text-slate-400" />}
           </button>
         ))}
       </div>
@@ -230,9 +334,18 @@ function Question({ stage, options, onChoose, timerOn, elapsed }) {
 }
 
 function Playing({ result, choice, slow, onSkip }) {
+  const eyebrow = choice.timedOut
+    ? 'Koniec czasu'
+    : choice.whatIf
+      ? 'Co by było, gdyby…'
+      : choice.revealed
+        ? 'Najlepsza decyzja'
+        : slow
+          ? 'Powtórka'
+          : 'Twoja decyzja'
   return (
     <div className="space-y-4">
-      <p className="eyebrow">{choice.timedOut ? 'Koniec czasu' : choice.revealed ? 'Dobra decyzja' : slow ? 'Powtórka' : 'Twoja decyzja'}</p>
+      <p className="eyebrow">{eyebrow}</p>
       <p className="text-lg font-semibold text-white">{choice.timedOut ? 'Nie zdążyłeś zdecydować…' : result.label}</p>
       <button type="button" className="btn-secondary" onClick={onSkip}>
         Pomiń animację
@@ -241,48 +354,100 @@ function Playing({ result, choice, slow, onSkip }) {
   )
 }
 
-function Feedback({ stage, result, choice, tries, last, dispatch }) {
+const TONE_CLASSES = {
+  good: { badge: 'badge-good', title: 'text-lime-300', icon: '✓' },
+  mid: { badge: 'badge-mid', title: 'text-amber-300', icon: '~' },
+  bad: { badge: 'badge-bad', title: 'text-red-300', icon: '✗' },
+}
+
+function Feedback({ stage, state, result, last, single, dispatch }) {
+  const { choice, solved } = state
   const primary = useRef(null)
   useEffect(() => primary.current?.focus(), [])
-  const good = result.correct
-  const badge = choice.revealed ? 'Tak należało zagrać' : good ? 'Dobra decyzja' : choice.timedOut ? 'Za późno' : 'Zła decyzja'
+  const tone = toneOf(result.quality)
+  const cls = TONE_CLASSES[tone]
+  const tries = state.attempts[stage.id] ?? 0
+  const badge = choice.whatIf
+    ? `Co by było, gdyby… · ${GRADES[result.quality].label}`
+    : choice.revealed
+      ? 'Tak należało zagrać'
+      : choice.timedOut
+        ? 'Za późno'
+        : GRADES[result.quality].label
+  const others = solved ? stage.options.filter((o) => o.id !== solved.optionId) : []
+
   return (
     <div className="space-y-4" data-testid="feedback">
-      <div className={`badge ${good ? 'badge-good' : 'badge-bad'}`}>
-        <span aria-hidden>{good ? '✓' : choice.timedOut ? '⏱' : '✗'}</span> {badge}
+      <div className={`badge ${choice.whatIf ? 'badge-info' : cls.badge}`}>
+        <span aria-hidden>{choice.whatIf ? '?' : choice.timedOut ? '⏱' : cls.icon}</span> {badge}
       </div>
-      <h2 className={`text-2xl font-extrabold leading-tight ${good ? 'text-lime-300' : 'text-red-300'}`}>{result.outcome}</h2>
+      <h2 className={`text-2xl font-extrabold leading-tight ${cls.title}`}>{result.outcome}</h2>
       {!choice.timedOut && (
         <p className="text-sm text-slate-400">
-          {choice.revealed ? 'Dobra decyzja' : 'Twój wybór'}: <span className="text-slate-200">{result.label}</span>
+          {choice.whatIf ? 'Gdybyś wybrał' : choice.revealed ? 'Najlepsza decyzja' : 'Twój wybór'}:{' '}
+          <span className="text-slate-200">{result.label}</span>
         </p>
       )}
       <p className="leading-relaxed text-slate-200">{result.feedback}</p>
-      {good && (
+      {result.correct && !choice.whatIf && (
         <div className="rounded-lg border border-lime-400/30 bg-lime-400/10 p-3 text-sm leading-relaxed text-lime-100">
           <span className="font-bold text-lime-300">Zasada: </span>
           {stage.lesson}
         </div>
       )}
+
       <div className="flex flex-wrap gap-2 pt-1">
-        {good ? (
+        {choice.whatIf ? (
+          <button ref={primary} type="button" className="btn-primary" onClick={() => dispatch({ type: 'BACK' })}>
+            ← Wróć do najlepszej decyzji
+          </button>
+        ) : solved ? (
           <button ref={primary} type="button" className="btn-primary" onClick={() => dispatch({ type: 'NEXT' })}>
-            {last ? 'Podsumowanie' : 'Dalej'} →
+            {last && !single ? 'Podsumowanie' : 'Dalej'} →
           </button>
         ) : (
           <button ref={primary} type="button" className="btn-primary" onClick={() => dispatch({ type: 'RETRY' })}>
-            Spróbuj jeszcze raz
+            {result.quality > 0 ? 'Poszukaj lepszej decyzji' : 'Spróbuj jeszcze raz'}
           </button>
         )}
         <button type="button" className="btn-secondary" onClick={() => dispatch({ type: 'REPLAY' })}>
           Powtórka (zwolnione tempo)
         </button>
-        {!good && tries >= 2 && (
+        {!solved && tries >= 2 && (
           <button type="button" className="btn-secondary" onClick={() => dispatch({ type: 'REVEAL' })}>
-            Pokaż dobrą decyzję
+            Pokaż najlepszą decyzję
           </button>
         )}
       </div>
+
+      {solved && (
+        <div className="space-y-2 border-t border-slate-800 pt-4">
+          <p className="text-sm font-bold text-white">
+            Co by było, gdyby…{' '}
+            <span className="font-normal text-slate-400">
+              (obejrzane {state.explored.length} z {others.length})
+            </span>
+          </p>
+          <div className="grid gap-2">
+            {others.map((o) => {
+              const seen = state.explored.includes(o.id)
+              const current = choice.whatIf && choice.optionId === o.id
+              return (
+                <button
+                  key={o.id}
+                  type="button"
+                  className={`whatif ${current ? 'whatif-current' : ''}`}
+                  onClick={() => dispatch({ type: 'WHATIF', optionId: o.id })}
+                  disabled={current}
+                >
+                  <span aria-hidden className={`whatif-dot ${seen ? `whatif-dot-${toneOf(quality(o))}` : ''}`} />
+                  <span>{o.label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -290,7 +455,7 @@ function Feedback({ stage, result, choice, tries, last, dispatch }) {
 function Summary({ state, onRestart, onExit }) {
   const { scenario } = state
   const s = stars(state)
-  const good = state.results.filter((r) => r.correct).length
+  const best = state.results.filter((r) => r.correct).length
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8" data-testid="summary">
       <button type="button" onClick={onExit} className="btn-ghost mb-4" aria-label="Wróć do listy sytuacji">
@@ -310,19 +475,22 @@ function Summary({ state, onRestart, onExit }) {
           <p className="text-sm text-slate-400">na {maxScore(scenario)} możliwych punktów</p>
         </div>
         <p className="text-slate-300">
-          Dobre decyzje za pierwszym razem: <b className="text-white">{good}</b> z {scenario.stages.length}
+          Najlepsze decyzje za pierwszym razem: <b className="text-white">{best}</b> z {scenario.stages.length}
         </p>
+        <p className="text-sm text-slate-400">Zagraj jeszcze raz — sytuacja może potoczyć się inaczej albo drugą stroną boiska.</p>
       </div>
 
       <div className="mt-6 space-y-3">
         {scenario.stages.map((st, i) => {
           const r = state.results.find((x) => x.stageId === st.id)
           const label = r?.timedOut ? 'Brak decyzji (koniec czasu)' : st.options.find((o) => o.id === r?.optionId)?.label
+          const tone = toneOf(r?.quality ?? 0)
+          const dot = { good: 'bg-lime-400 text-slate-900', mid: 'bg-amber-400 text-slate-900', bad: 'bg-red-500 text-white' }[tone]
           return (
             <div key={st.id} className="panel !p-4 text-left">
               <div className="flex items-start gap-3">
-                <span className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm font-bold ${r?.correct ? 'bg-lime-400 text-slate-900' : 'bg-red-500 text-white'}`}>
-                  {r?.correct ? '✓' : '✗'}
+                <span className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm font-bold ${dot}`}>
+                  {TONE_CLASSES[tone].icon}
                 </span>
                 <div className="min-w-0 space-y-1">
                   <p className="font-bold text-white">

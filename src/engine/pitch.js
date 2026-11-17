@@ -21,4 +21,5 @@ export const TEAM_STYLE = {
   home: { fill: '#2563eb', stroke: '#ffffff', text: '#ffffff' },
   homeGK: { fill: '#facc15', stroke: '#1f2937', text: '#1f2937' },
   away: { fill: '#dc2626', stroke: '#ffffff', text: '#ffffff' },
+  awayGK: { fill: '#111827', stroke: '#f8fafc', text: '#f8fafc' },
 }

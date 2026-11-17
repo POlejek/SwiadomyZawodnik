@@ -11,6 +11,7 @@ export const obrona2v1Skrzydlo = {
   title: 'Obrona 2 na 1',
   subtitle: 'Kontra rywala prawym skrzydłem, drugi napastnik wbiega środkiem',
   category: 'Obrona',
+  positions: ['obronca'],
   level: 'Średni',
   brief:
     'Twoja drużyna straciła piłkę. Rywal z piłką pędzi prawym skrzydłem, jego partner wbiega środkiem. Jesteś ostatnim obrońcą przed bramkarzem, a kolega z pomocy dopiero wraca.',
