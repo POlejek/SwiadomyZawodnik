@@ -93,6 +93,7 @@ export const wbiegniecieBlizszySlupek = {
         },
         {
           id: 'dalszy',
+          quality: 1,
           label: 'Na dalszy słupek, za plecy obrońcy',
           correct: false,
           outcome: 'Bramkarz przecina podanie',
@@ -102,7 +103,7 @@ export const wbiegniecieBlizszySlupek = {
             duration: 2.4,
             tracks: {
               ty: [{ t: 1.4, x: 30, y: 6 }],
-              c2: [{ t: 1.4, x: 30.5, y: 8 }],
+              c2: [{ t: 1.4, x: 32.5, y: 9.5 }],
               c1: [{ t: 1.4, x: 37, y: 10 }],
               gk: [{ t: 1.2, x: 38.5, y: 2.8 }],
             },
@@ -200,6 +201,7 @@ export const wbiegniecieBlizszySlupek = {
         },
         {
           id: 'blizszy-rog',
+          quality: 1,
           label: 'Uderzam z całej siły w bliższy róg',
           correct: false,
           outcome: 'Obrona bramkarza',

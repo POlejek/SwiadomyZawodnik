@@ -31,12 +31,12 @@ describe('App', () => {
       const good = st.options.find((o) => o.correct)
       await user.click(screen.getByRole('button', { name: new RegExp(good.label.slice(0, 20)) }))
       await skip(user)
-      expect(within(screen.getByTestId('feedback')).getByText('Dobra decyzja')).toBeInTheDocument()
+      expect(within(screen.getByTestId('feedback')).getByText('Najlepsza decyzja')).toBeInTheDocument()
       await user.click(screen.getByRole('button', { name: /Dalej|Podsumowanie/ }))
     }
 
     const summary = screen.getByTestId('summary')
-    expect(within(summary).getByText(/Dobre decyzje za pierwszym razem/)).toHaveTextContent('2 z 3')
+    expect(within(summary).getByText(/Najlepsze decyzje za pierwszym razem/)).toHaveTextContent('2 z 3')
     await user.click(screen.getByRole('button', { name: 'Inne sytuacje' }))
     expect(screen.getByText(/Rekord:/)).toBeInTheDocument()
   })

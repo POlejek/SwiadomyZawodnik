@@ -19,6 +19,24 @@ golem albo rzutem karnym, dobra prowadzi do kolejnego etapu akcji.
 
 Każdy etap ma 4 odpowiedzi i dla każdej osobną animację skutku. Do tego jest skutek braku decyzji, gdy skończy się czas.
 
+## Grywalność: co sprawia, że chce się wracać
+
+Grupa docelowa: U11–U16.
+
+- **Każda gra jest trochę inna.** Połowa rozgrywek toczy się lustrzanie (drugą stroną boiska, łącznie z tekstami „lewą/prawą”).
+  Dwa etapy mają **warianty z sygnałem**: te same 4 odpowiedzi, ale najlepsza zależy od tego, co zrobi rywal:
+  - Atak 2 na 1: obrońca wychodzi do ciebie → podaj; zostaje przy koledze → prowadź i strzelaj.
+  - Wyjście spod pressingu: skrzydłowy zamyka linię → graj do szóstki; zamyka środek → graj po linii.
+
+  Zawodnik musi *patrzeć*, a nie pamiętać, czyli trenuje czytanie gry.
+- **Oceny stopniowane:** najlepsza / dobra / słaba / zła decyzja. Słaba daje część punktów i zachętę „Poszukaj lepszej decyzji”
+  zamiast samego „źle”.
+- **„Co by było, gdyby…”:** po najlepszej decyzji można obejrzeć skutki pozostałych odpowiedzi, z licznikiem obejrzanych.
+- **Grupa wiekowa** ustawia czas na decyzję: U11–U12 → 40 s, U13–U14 → 25 s, U15–U16 → 15 s (można zmienić ręcznie).
+- **Dźwięk:** gwizdek na start i przy faulu, trybuny przy golu, krótki sygnał przy ocenie, wibracja przy złej decyzji (Android).
+  Dźwięki są generowane w przeglądarce, bez plików. Można je wyłączyć.
+- **Czytanie na głos:** przycisk 🔊 czyta pytanie i odpowiedzi (głos systemu, po polsku), co pomaga młodszym zawodnikom.
+
 ## Jak gra działa
 
 - **Obserwuj → Zdecyduj → Zobacz skutek.** Po każdej odpowiedzi: animacja skutku, wyjaśnienie trenerskie i rysunek
@@ -83,10 +101,11 @@ Pole karne: `x` 13,84–54,16, `y` 0–16,5. Bramka: `x` 30,34–37,66.
     title, question, lesson,               // lesson = zasada pokazywana po dobrej decyzji i w podsumowaniu
     intro: KLIP,                           // animacja przed pytaniem
     options: [                             // dokładnie 4, dokładnie jedna correct: true
-      { id, label, correct, outcome, feedback, clip: KLIP, highlights: [...] },
+      { id, label, correct, quality, outcome, feedback, clip: KLIP, highlights: [...] }, // quality: 0 zła (domyślnie), 1 słaba, 2 dobra
     ],
     intro: null,                           // etap może zacząć się od razu od pytania
     timeout: { outcome, feedback, clip: KLIP },   // skutek końca czasu; albo { optionId, feedback } = animacja jednej z odpowiedzi
+    variants: [{ variantId, intro, options }],    // opcjonalnie: inne wersje etapu (inny sygnał → inna najlepsza odpowiedź)
   }],
 }
 ```

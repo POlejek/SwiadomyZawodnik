@@ -114,6 +114,7 @@ export const atak2v1 = {
         },
         {
           id: 'strzal-z-daleka',
+          quality: 1,
           label: 'Strzelam od razu z 35 metrów',
           correct: false,
           outcome: 'Łatwa obrona bramkarza',
@@ -161,9 +162,9 @@ export const atak2v1 = {
     {
       id: 'moment-podania',
       title: 'Moment podania',
-      question: 'Obrońca wyszedł do ciebie i zostawił kolegę bez krycia. Co teraz?',
+      question: 'Zbliżasz się do pola karnego, kolega biegnie lewą stroną. Patrz na obrońcę! Co robisz?',
       lesson:
-        'Podawaj w chwili, gdy obrońca zaangażuje się w ciebie — wtedy kolega jest wolny. Ani za wcześnie, ani za późno.',
+        'Patrz na obrońcę: jeśli wychodzi do ciebie — podaj do wolnego kolegi. Jeśli zostaje przy koledze — prowadź piłkę na bramkę i strzelaj.',
       intro: {
         duration: 1.8,
         tracks: {
@@ -173,16 +174,16 @@ export const atak2v1 = {
           r: [{ t: 1.8, x: 40, y: 28 }],
           gk: [{ t: 1.8, x: 35, y: 4 }],
         },
-        events: [{ t: 0.2, text: 'Obrońca wychodzi do ciebie', tone: 'info', dur: 1.6 }],
+        events: [{ t: 0.2, text: 'Patrz, co robi obrońca', tone: 'info', dur: 1.6 }],
       },
       options: [
         {
           id: 'podaj',
-          label: 'Podaję do wolnego kolegi',
+          label: 'Podaję do kolegi',
           correct: true,
           outcome: 'Gol!',
           feedback:
-            'Idealnie! Podałeś, gdy obrońca był już przy tobie — kolega miał przed sobą tylko bramkarza i spokojnie wykończył akcję.',
+            'Idealnie! Obrońca wyszedł do ciebie i zostawił kolegę — podałeś dokładnie w tym momencie. Kolega miał przed sobą tylko bramkarza.',
           clip: {
             duration: 3.0,
             tracks: {
@@ -204,11 +205,11 @@ export const atak2v1 = {
         },
         {
           id: 'strzal',
-          label: 'Strzelam mimo obrońcy przede mną',
+          label: 'Prowadzę piłkę dalej i strzelam',
           correct: false,
           outcome: 'Strzał zablokowany',
           feedback:
-            'Obrońca stał metr przed tobą — taki strzał prawie zawsze trafia w niego. A kolega obok był zupełnie wolny.',
+            'Obrońca wyszedł do ciebie i stał metr przed tobą — taki strzał prawie zawsze trafia w niego. A kolega obok był zupełnie wolny.',
           clip: {
             duration: 2.6,
             tracks: {
@@ -227,7 +228,7 @@ export const atak2v1 = {
         },
         {
           id: 'drybling',
-          label: 'Próbuję minąć obrońcę dryblingiem',
+          label: 'Próbuję minąć obrońcę zwodem',
           correct: false,
           outcome: 'Strata piłki',
           feedback:
@@ -271,6 +272,120 @@ export const atak2v1 = {
             events: [{ t: 1.6, text: 'Rywal wrócił', tone: 'bad', dur: 1.6 }],
           },
           highlights: [{ type: 'arrow', from: [40, 28], to: [37.8, 21.8], tone: 'bad', label: 'rywal wraca', labelDx: 7, labelDy: 0 }],
+        },
+      ],
+      variants: [
+        {
+          // Cue B: the defender stays with the team-mate and cuts the pass — the way to goal is open.
+          variantId: 'obronca-przy-koledze',
+          intro: {
+            duration: 1.8,
+            tracks: {
+              ty: [{ t: 1.8, x: 35.5, y: 20.3 }],
+              d: [{ t: 1.8, x: 28.5, y: 14.5 }],
+              p: [{ t: 1.8, x: 22, y: 17 }],
+              r: [{ t: 1.8, x: 40, y: 28 }],
+              gk: [{ t: 1.8, x: 35, y: 4 }],
+            },
+            events: [{ t: 0.2, text: 'Patrz, co robi obrońca', tone: 'info', dur: 1.6 }],
+          },
+          options: [
+            {
+              id: 'podaj',
+              label: 'Podaję do kolegi',
+              correct: false,
+              outcome: 'Strata piłki',
+              feedback:
+                'Obrońca został przy koledze właśnie po to, żeby przeciąć podanie. Gdy obrońca pilnuje partnera, droga do bramki jest twoja.',
+              clip: {
+                duration: 2.6,
+                tracks: {
+                  d: [{ t: 0.9, x: 27.5, y: 15.5 }],
+                  p: [{ t: 2.6, x: 24, y: 14 }],
+                  r: [{ t: 2.6, x: 38, y: 24 }],
+                },
+                ball: [
+                  { t: 0.3, on: 'ty' },
+                  { t: 0.9, on: 'd' },
+                  { t: 1.4, on: 'd' },
+                  { t: 2.4, x: 12, y: 40, arc: 5 },
+                ],
+                events: [{ t: 0.9, text: 'Przechwyt!', tone: 'bad', dur: 1.6 }],
+              },
+              highlights: [{ type: 'cross', from: [35.5, 19.3], to: [23, 16.5], tone: 'bad', label: 'obrońca w linii podania', labelDy: -2.2 }],
+            },
+            {
+              id: 'strzal',
+              label: 'Prowadzę piłkę dalej i strzelam',
+              correct: true,
+              outcome: 'Gol!',
+              feedback:
+                'Świetnie! Obrońca został przy koledze i odciął podanie — więc droga do bramki była wolna. Wykorzystałeś to, co dał ci rywal.',
+              clip: {
+                duration: 2.8,
+                tracks: {
+                  ty: [{ t: 1.0, x: 36, y: 12.5 }, { t: 2.8, x: 35, y: 9 }],
+                  d: [{ t: 1.4, x: 32, y: 12 }],
+                  p: [{ t: 1.6, x: 24, y: 11 }],
+                  gk: [{ t: 1.0, x: 35.5, y: 3.5 }, { t: 1.5, x: 33.5, y: 2.4, pose: 'down' }],
+                  r: [{ t: 2.6, x: 38, y: 20 }],
+                },
+                ball: [
+                  { t: 1.0, on: 'ty' },
+                  { t: 1.4, x: 31.2, y: -0.6, arc: 0.6 },
+                ],
+                events: [{ t: 1.5, text: 'GOL', tone: 'good', dur: 3 }],
+              },
+              highlights: [{ type: 'arrow', from: [35.5, 19.3], to: [36, 13.5], tone: 'good', label: 'wolna droga', labelDx: 7, labelDy: 0 }],
+            },
+            {
+              id: 'drybling',
+              label: 'Próbuję minąć obrońcę zwodem',
+              correct: false,
+              outcome: 'Strata piłki',
+              feedback:
+                'Obrońca nie wyszedł do ciebie — to ty ruszyłeś na niego. Pojedynek, którego nie trzeba było grać, skończył się stratą, a droga do bramki była wolna.',
+              clip: {
+                duration: 2.6,
+                tracks: {
+                  ty: [{ t: 1.0, x: 31.5, y: 16 }],
+                  d: [{ t: 1.0, x: 30, y: 15.2 }],
+                  p: [{ t: 2.6, x: 24, y: 13 }],
+                  r: [{ t: 2.6, x: 38, y: 23 }],
+                },
+                ball: [
+                  { t: 0.95, on: 'ty' },
+                  { t: 1.1, on: 'd' },
+                  { t: 1.5, on: 'd' },
+                  { t: 2.5, x: 14, y: 40, arc: 5 },
+                ],
+                events: [{ t: 1.1, text: 'Odbiór', tone: 'bad', dur: 1.4 }],
+              },
+              highlights: [{ type: 'arrow', from: [35.5, 19.3], to: [36, 13.5], tone: 'info', label: 'wolna droga', labelDx: 7, labelDy: 0 }],
+            },
+            {
+              id: 'czekaj',
+              label: 'Zwalniam i czekam, aż kolega podbiegnie bliżej',
+              correct: false,
+              outcome: 'Przewaga stracona',
+              feedback:
+                'Każda sekunda czekania pozwala rywalom wrócić. Zawodnik, który gonił akcję, dobiegł i odebrał ci piłkę od tyłu.',
+              clip: {
+                duration: 2.6,
+                tracks: {
+                  p: [{ t: 1.6, x: 26, y: 17 }],
+                  d: [{ t: 1.6, x: 30, y: 15.5 }],
+                  r: [{ t: 1.5, x: 37, y: 21.8 }, { t: 2.6, x: 41, y: 24 }],
+                },
+                ball: [
+                  { t: 1.5, on: 'ty' },
+                  { t: 1.7, on: 'r' },
+                ],
+                events: [{ t: 1.6, text: 'Rywal wrócił', tone: 'bad', dur: 1.6 }],
+              },
+              highlights: [{ type: 'arrow', from: [40, 28], to: [37.8, 21.8], tone: 'bad', label: 'rywal wraca', labelDx: 7, labelDy: 0 }],
+            },
+          ],
         },
       ],
       timeout: {

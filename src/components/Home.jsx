@@ -1,15 +1,16 @@
 import { initialState } from '../engine/animation'
-import { DECISION_OPTIONS, maxScore } from '../engine/game'
+import { AGE_GROUPS, DECISION_OPTIONS, maxScore } from '../engine/game'
 import { load } from '../storage'
 import Pitch from './Pitch'
 
 const steps = (seconds) => [
   ['Obserwuj', 'Akcja rozgrywa się na boisku i zatrzymuje w kluczowym momencie.'],
   ['Zdecyduj', seconds ? `Masz 4 odpowiedzi i ${seconds} sekund na decyzję.` : 'Masz 4 odpowiedzi. Zastanów się i wybierz.'],
-  ['Zobacz skutek', 'Zawodnik robi to, co wybrałeś. Zła decyzja kosztuje: strata, gol, rzut karny.'],
+  ['Zobacz skutek', 'Zawodnik robi to, co wybrałeś. Zła decyzja kosztuje: strata, gol, rzut karny. Każda gra może potoczyć się inaczej.'],
 ]
 
-export default function Home({ scenarios, onPlay, decisionSeconds, onDecisionSeconds }) {
+export default function Home({ scenarios, onPlay, settings, onSettings }) {
+  const { decisionSeconds, ageGroup, sound } = settings
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:py-12">
       <header className="mb-8 sm:mb-10">
@@ -32,22 +33,41 @@ export default function Home({ scenarios, onPlay, decisionSeconds, onDecisionSec
         ))}
       </ol>
 
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-extrabold text-white">Sytuacje</h2>
-        <label className="flex items-center gap-2 text-sm text-slate-300">
-          Czas na decyzję
-          <select
-            className="min-h-[40px] rounded-lg border border-slate-700 bg-slate-800 px-2 text-sm font-semibold text-slate-100"
-            value={decisionSeconds}
-            onChange={(e) => onDecisionSeconds(Number(e.target.value))}
-          >
-            {DECISION_OPTIONS.map((s) => (
-              <option key={s} value={s}>
-                {s ? `${s} s` : 'bez limitu'}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-300">
+          <label className="flex items-center gap-2">
+            Grupa wiekowa
+            <select
+              className="select"
+              value={ageGroup}
+              onChange={(e) => {
+                const g = AGE_GROUPS.find((a) => a.id === e.target.value)
+                onSettings({ ageGroup: g.id, decisionSeconds: g.seconds })
+              }}
+            >
+              {AGE_GROUPS.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex items-center gap-2">
+            Czas na decyzję
+            <select className="select" value={decisionSeconds} onChange={(e) => onSettings({ decisionSeconds: Number(e.target.value) })}>
+              {DECISION_OPTIONS.map((s) => (
+                <option key={s} value={s}>
+                  {s ? `${s} s` : 'bez limitu'}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex cursor-pointer items-center gap-2">
+            <input type="checkbox" className="h-4 w-4 accent-lime-400" checked={sound} onChange={(e) => onSettings({ sound: e.target.checked })} />
+            Dźwięk
+          </label>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

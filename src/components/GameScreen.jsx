@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { endState, eventsAt, stateAt } from '../engine/animation'
-import { choiceResult, currentStage, gameReducer, maxScore, startGame, stars } from '../engine/game'
+import { GRADES, choiceResult, currentStage, gameReducer, maxScore, quality, startGame, stars } from '../engine/game'
+import { prepareRun } from '../engine/variants'
+import { buzz, canSpeak, playSound, speak, stopSpeaking } from '../sound'
 import { load, save } from '../storage'
 import Pitch from './Pitch'
 import { useClipPlayer } from './useClipPlayer'
@@ -16,9 +18,14 @@ function shuffle(list) {
   return a
 }
 
-export default function GameScreen({ scenario, decisionSeconds, onExit }) {
+const toneOf = (grade) => GRADES[grade]?.tone ?? 'bad'
+
+export default function GameScreen({ scenario: baseScenario, decisionSeconds, onExit }) {
   const timerOn = decisionSeconds > 0
-  const [state, dispatch] = useReducer(gameReducer, scenario, (s) => startGame(s))
+  // Every run is a fresh version: random cue variants and, half of the time, the mirrored side of the pitch.
+  const [state, dispatch] = useReducer(gameReducer, baseScenario, (s) => startGame(prepareRun(s)))
+  const restart = () => dispatch({ type: 'START', scenario: prepareRun(baseScenario) })
+  const { scenario } = state
   const stage = currentStage(state)
   const entities = scenario.entities
   const result = choiceResult(stage, state.choice)
@@ -27,10 +34,11 @@ export default function GameScreen({ scenario, decisionSeconds, onExit }) {
   const playing = state.phase === 'intro' || state.phase === 'outcome'
   const clip = state.phase === 'intro' ? stage.intro : state.phase === 'outcome' ? result.clip : null
   const clipStart = state.phase === 'intro' ? state.introStart : state.questionState
+  const playKey = `${state.runId}-${state.playId}-${state.phase}`
 
   const { t, skip } = useClipPlayer(clip, {
     active: playing,
-    playKey: `${state.runId}-${state.playId}-${state.phase}`,
+    playKey,
     speed: state.slow ? 0.5 : 1,
     hold: state.phase === 'outcome' ? 1.1 : 0.15,
     onEnd: () => dispatch({ type: state.phase === 'intro' ? 'INTRO_DONE' : 'OUTCOME_DONE' }),
@@ -56,6 +64,31 @@ export default function GameScreen({ scenario, decisionSeconds, onExit }) {
   const captions = playing && clip ? eventsAt(placedEvents, t) : []
   const highlights = state.phase === 'feedback' ? result.highlights : []
 
+  // Sounds: kick-off whistle, goals and fouls as they happen on the pitch, a short cue for the verdict.
+  const heard = useRef(new Set())
+  useEffect(() => {
+    if (state.phase === 'intro' && state.stageIndex === 0 && !heard.current.has(`ko-${state.runId}`)) {
+      heard.current.add(`ko-${state.runId}`)
+      playSound('whistle')
+    }
+  }, [state.phase, state.stageIndex, state.runId])
+  useEffect(() => {
+    for (const c of captions) {
+      const key = `${playKey}-${c.t}-${c.text}`
+      if (heard.current.has(key)) continue
+      heard.current.add(key)
+      if (c.text === 'GOL') playSound(c.tone === 'good' ? 'goalFor' : 'goalAgainst')
+      else if (c.text.startsWith('Faul')) playSound('whistle')
+    }
+  })
+  useEffect(() => {
+    if (state.phase !== 'feedback' || state.choice?.whatIf) return
+    const tone = toneOf(result.quality)
+    playSound(tone)
+    if (tone === 'bad') buzz(80)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.phase, state.playId])
+
   // Answers in random order every run, so players learn the football, not the button position.
   const options = useMemo(() => shuffle(stage.options), [stage, state.runId])
 
@@ -72,21 +105,25 @@ export default function GameScreen({ scenario, decisionSeconds, onExit }) {
       setElapsed(ms)
       if (ms >= decisionSeconds * 1000) {
         clearInterval(id)
+        stopSpeaking()
         dispatch({ type: 'TIMEOUT' })
       }
     }, 100)
     return () => clearInterval(id)
-  }, [state.phase, state.playId, decisionSeconds])
+  }, [state.phase, state.playId, decisionSeconds, timerOn])
 
-  const choose = (optionId) =>
+  const choose = (optionId) => {
+    stopSpeaking()
     dispatch({ type: 'CHOOSE', optionId, timeMs: performance.now() - askedAt.current, seconds: decisionSeconds })
+  }
+  useEffect(() => () => stopSpeaking(), [])
 
   // Keyboard: 1–4 or A–D picks an answer.
   useEffect(() => {
     if (state.phase !== 'question') return undefined
     const onKey = (e) => {
       const k = e.key.toUpperCase()
-      const i = '1234'.includes(k) && k !== '' ? Number(k) - 1 : LETTERS.indexOf(k)
+      const i = k.length === 1 && '1234'.includes(k) ? Number(k) - 1 : LETTERS.indexOf(k)
       if (i >= 0 && i < options.length) choose(options[i].id)
     }
     window.addEventListener('keydown', onKey)
@@ -101,7 +138,7 @@ export default function GameScreen({ scenario, decisionSeconds, onExit }) {
   }, [state.phase, state.score, scenario.id])
 
   if (state.phase === 'summary') {
-    return <Summary state={state} onRestart={() => dispatch({ type: 'RESTART' })} onExit={onExit} />
+    return <Summary state={state} onRestart={restart} onExit={onExit} />
   }
 
   return (
@@ -120,10 +157,10 @@ export default function GameScreen({ scenario, decisionSeconds, onExit }) {
           {state.phase === 'outcome' && <Playing result={result} choice={state.choice} slow={state.slow} onSkip={skip} />}
           {state.phase === 'feedback' && (
             <Feedback
+              key={`${state.playId}-${state.choice?.optionId}`}
               stage={stage}
+              state={state}
               result={result}
-              choice={state.choice}
-              tries={state.attempts[stage.id] ?? 0}
               last={state.stageIndex === scenario.stages.length - 1}
               dispatch={dispatch}
             />
@@ -132,6 +169,11 @@ export default function GameScreen({ scenario, decisionSeconds, onExit }) {
       </div>
     </div>
   )
+}
+
+function stepClass(r) {
+  if (!r) return 'step-bad'
+  return { good: 'step-good', mid: 'step-mid', bad: 'step-bad' }[toneOf(r.quality)]
 }
 
 function TopBar({ scenario, state, onExit }) {
@@ -147,8 +189,7 @@ function TopBar({ scenario, state, onExit }) {
       <ol className="flex items-center gap-1.5" aria-label="Etapy">
         {scenario.stages.map((s, i) => {
           const r = state.results.find((x) => x.stageId === s.id)
-          const cls =
-            i === state.stageIndex ? 'step-current' : r ? (r.correct ? 'step-good' : 'step-bad') : i < state.stageIndex ? 'step-bad' : 'step-todo'
+          const cls = i === state.stageIndex ? 'step-current' : i < state.stageIndex ? stepClass(r) : 'step-todo'
           return (
             <li key={s.id} className={`step ${cls}`} title={s.title}>
               <span className="sr-only">
@@ -201,7 +242,7 @@ function Watching({ stage, onSkip }) {
     <div className="space-y-4">
       <p className="eyebrow">{stage.title}</p>
       <p className="text-lg font-semibold text-slate-200">Obserwuj sytuację…</p>
-      <p className="text-sm text-slate-400">Za chwilę akcja się zatrzyma i podejmiesz decyzję.</p>
+      <p className="text-sm text-slate-400">Patrz, co robią rywale. Za chwilę akcja się zatrzyma i podejmiesz decyzję.</p>
       <button type="button" className="btn-secondary" onClick={onSkip}>
         Pomiń animację
       </button>
@@ -213,10 +254,18 @@ function Question({ stage, options, onChoose, seconds, elapsed }) {
   const timerOn = seconds > 0
   const left = Math.max(0, seconds - elapsed / 1000)
   const pct = timerOn ? (left / seconds) * 100 : 0
+  const readAloud = () => speak([stage.question, ...options.map((o, i) => `${LETTERS[i]}. ${o.label}.`)].join(' '))
   return (
     <div className="space-y-4">
       <div>
-        <p className="eyebrow">{stage.title}</p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="eyebrow">{stage.title}</p>
+          {canSpeak() && (
+            <button type="button" className="btn-chip" onClick={readAloud} aria-label="Przeczytaj pytanie na głos">
+              <span aria-hidden>🔊</span> Przeczytaj
+            </button>
+          )}
+        </div>
         <h2 className="mt-1 text-lg font-bold leading-snug text-white sm:text-xl">{stage.question}</h2>
       </div>
       {timerOn && (
@@ -243,9 +292,18 @@ function Question({ stage, options, onChoose, seconds, elapsed }) {
 }
 
 function Playing({ result, choice, slow, onSkip }) {
+  const eyebrow = choice.timedOut
+    ? 'Koniec czasu'
+    : choice.whatIf
+      ? 'Co by było, gdyby…'
+      : choice.revealed
+        ? 'Najlepsza decyzja'
+        : slow
+          ? 'Powtórka'
+          : 'Twoja decyzja'
   return (
     <div className="space-y-4">
-      <p className="eyebrow">{choice.timedOut ? 'Koniec czasu' : choice.revealed ? 'Dobra decyzja' : slow ? 'Powtórka' : 'Twoja decyzja'}</p>
+      <p className="eyebrow">{eyebrow}</p>
       <p className="text-lg font-semibold text-white">{choice.timedOut ? 'Nie zdążyłeś zdecydować…' : result.label}</p>
       <button type="button" className="btn-secondary" onClick={onSkip}>
         Pomiń animację
@@ -254,48 +312,100 @@ function Playing({ result, choice, slow, onSkip }) {
   )
 }
 
-function Feedback({ stage, result, choice, tries, last, dispatch }) {
+const TONE_CLASSES = {
+  good: { badge: 'badge-good', title: 'text-lime-300', icon: '✓' },
+  mid: { badge: 'badge-mid', title: 'text-amber-300', icon: '~' },
+  bad: { badge: 'badge-bad', title: 'text-red-300', icon: '✗' },
+}
+
+function Feedback({ stage, state, result, last, dispatch }) {
+  const { choice, solved } = state
   const primary = useRef(null)
   useEffect(() => primary.current?.focus(), [])
-  const good = result.correct
-  const badge = choice.revealed ? 'Tak należało zagrać' : good ? 'Dobra decyzja' : choice.timedOut ? 'Za późno' : 'Zła decyzja'
+  const tone = toneOf(result.quality)
+  const cls = TONE_CLASSES[tone]
+  const tries = state.attempts[stage.id] ?? 0
+  const badge = choice.whatIf
+    ? `Co by było, gdyby… · ${GRADES[result.quality].label}`
+    : choice.revealed
+      ? 'Tak należało zagrać'
+      : choice.timedOut
+        ? 'Za późno'
+        : GRADES[result.quality].label
+  const others = solved ? stage.options.filter((o) => o.id !== solved.optionId) : []
+
   return (
     <div className="space-y-4" data-testid="feedback">
-      <div className={`badge ${good ? 'badge-good' : 'badge-bad'}`}>
-        <span aria-hidden>{good ? '✓' : choice.timedOut ? '⏱' : '✗'}</span> {badge}
+      <div className={`badge ${choice.whatIf ? 'badge-info' : cls.badge}`}>
+        <span aria-hidden>{choice.whatIf ? '?' : choice.timedOut ? '⏱' : cls.icon}</span> {badge}
       </div>
-      <h2 className={`text-2xl font-extrabold leading-tight ${good ? 'text-lime-300' : 'text-red-300'}`}>{result.outcome}</h2>
+      <h2 className={`text-2xl font-extrabold leading-tight ${cls.title}`}>{result.outcome}</h2>
       {!choice.timedOut && (
         <p className="text-sm text-slate-400">
-          {choice.revealed ? 'Dobra decyzja' : 'Twój wybór'}: <span className="text-slate-200">{result.label}</span>
+          {choice.whatIf ? 'Gdybyś wybrał' : choice.revealed ? 'Najlepsza decyzja' : 'Twój wybór'}:{' '}
+          <span className="text-slate-200">{result.label}</span>
         </p>
       )}
       <p className="leading-relaxed text-slate-200">{result.feedback}</p>
-      {good && (
+      {result.correct && !choice.whatIf && (
         <div className="rounded-lg border border-lime-400/30 bg-lime-400/10 p-3 text-sm leading-relaxed text-lime-100">
           <span className="font-bold text-lime-300">Zasada: </span>
           {stage.lesson}
         </div>
       )}
+
       <div className="flex flex-wrap gap-2 pt-1">
-        {good ? (
+        {choice.whatIf ? (
+          <button ref={primary} type="button" className="btn-primary" onClick={() => dispatch({ type: 'BACK' })}>
+            ← Wróć do najlepszej decyzji
+          </button>
+        ) : solved ? (
           <button ref={primary} type="button" className="btn-primary" onClick={() => dispatch({ type: 'NEXT' })}>
             {last ? 'Podsumowanie' : 'Dalej'} →
           </button>
         ) : (
           <button ref={primary} type="button" className="btn-primary" onClick={() => dispatch({ type: 'RETRY' })}>
-            Spróbuj jeszcze raz
+            {result.quality > 0 ? 'Poszukaj lepszej decyzji' : 'Spróbuj jeszcze raz'}
           </button>
         )}
         <button type="button" className="btn-secondary" onClick={() => dispatch({ type: 'REPLAY' })}>
           Powtórka (zwolnione tempo)
         </button>
-        {!good && tries >= 2 && (
+        {!solved && tries >= 2 && (
           <button type="button" className="btn-secondary" onClick={() => dispatch({ type: 'REVEAL' })}>
-            Pokaż dobrą decyzję
+            Pokaż najlepszą decyzję
           </button>
         )}
       </div>
+
+      {solved && (
+        <div className="space-y-2 border-t border-slate-800 pt-4">
+          <p className="text-sm font-bold text-white">
+            Co by było, gdyby…{' '}
+            <span className="font-normal text-slate-400">
+              (obejrzane {state.explored.length} z {others.length})
+            </span>
+          </p>
+          <div className="grid gap-2">
+            {others.map((o) => {
+              const seen = state.explored.includes(o.id)
+              const current = choice.whatIf && choice.optionId === o.id
+              return (
+                <button
+                  key={o.id}
+                  type="button"
+                  className={`whatif ${current ? 'whatif-current' : ''}`}
+                  onClick={() => dispatch({ type: 'WHATIF', optionId: o.id })}
+                  disabled={current}
+                >
+                  <span aria-hidden className={`whatif-dot ${seen ? `whatif-dot-${toneOf(quality(o))}` : ''}`} />
+                  <span>{o.label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -303,7 +413,7 @@ function Feedback({ stage, result, choice, tries, last, dispatch }) {
 function Summary({ state, onRestart, onExit }) {
   const { scenario } = state
   const s = stars(state)
-  const good = state.results.filter((r) => r.correct).length
+  const best = state.results.filter((r) => r.correct).length
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8" data-testid="summary">
       <button type="button" onClick={onExit} className="btn-ghost mb-4" aria-label="Wróć do listy sytuacji">
@@ -323,19 +433,22 @@ function Summary({ state, onRestart, onExit }) {
           <p className="text-sm text-slate-400">na {maxScore(scenario)} możliwych punktów</p>
         </div>
         <p className="text-slate-300">
-          Dobre decyzje za pierwszym razem: <b className="text-white">{good}</b> z {scenario.stages.length}
+          Najlepsze decyzje za pierwszym razem: <b className="text-white">{best}</b> z {scenario.stages.length}
         </p>
+        <p className="text-sm text-slate-400">Zagraj jeszcze raz — sytuacja może potoczyć się inaczej albo drugą stroną boiska.</p>
       </div>
 
       <div className="mt-6 space-y-3">
         {scenario.stages.map((st, i) => {
           const r = state.results.find((x) => x.stageId === st.id)
           const label = r?.timedOut ? 'Brak decyzji (koniec czasu)' : st.options.find((o) => o.id === r?.optionId)?.label
+          const tone = toneOf(r?.quality ?? 0)
+          const dot = { good: 'bg-lime-400 text-slate-900', mid: 'bg-amber-400 text-slate-900', bad: 'bg-red-500 text-white' }[tone]
           return (
             <div key={st.id} className="panel !p-4 text-left">
               <div className="flex items-start gap-3">
-                <span className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm font-bold ${r?.correct ? 'bg-lime-400 text-slate-900' : 'bg-red-500 text-white'}`}>
-                  {r?.correct ? '✓' : '✗'}
+                <span className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm font-bold ${dot}`}>
+                  {TONE_CLASSES[tone].icon}
                 </span>
                 <div className="min-w-0 space-y-1">
                   <p className="font-bold text-white">

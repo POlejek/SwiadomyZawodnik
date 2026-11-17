@@ -1,13 +1,29 @@
 import { describe, expect, it } from 'vitest'
 import { endState, initialState, stateAt } from '../engine/animation'
 import { VIEW } from '../engine/pitch'
+import { mirrorScenario } from '../engine/variants'
 import { SCENARIOS } from '.'
 import { validateScenario } from './validate'
 
-describe.each(SCENARIOS.map((s) => [s.id, s]))('scenario %s', (_id, sc) => {
-  it('has no authoring mistakes', () => {
-    expect(validateScenario(sc)).toEqual([])
+// Every way a scenario can be played: each combination of stage variants, on both sides of the pitch.
+function allRuns(sc) {
+  let combos = [[]]
+  for (const st of sc.stages) {
+    const { variants = [], ...base } = st
+    const versions = [base, ...variants.map((v) => ({ ...base, ...v }))]
+    combos = combos.flatMap((c) => versions.map((v) => [...c, v]))
+  }
+  const plain = combos.map((stages, i) => ({ ...sc, stages, run: `wersja ${i + 1}` }))
+  return [...plain, ...plain.map((r) => ({ ...mirrorScenario(r), run: `${r.run}, lustro` }))]
+}
+
+describe.each(SCENARIOS.map((s) => [s.id, s]))('scenario %s', (_id, scenario) => {
+  it('has no authoring mistakes, also mirrored', () => {
+    expect(validateScenario(scenario)).toEqual([])
+    expect(validateScenario(mirrorScenario(scenario))).toEqual([])
   })
+
+  describe.each(allRuns(scenario).map((r) => [r.run, r]))('%s', (_run, sc) => {
 
   it('every shot that ends in a goal finishes inside the goal', () => {
     for (const st of sc.stages) {
@@ -53,6 +69,7 @@ describe.each(SCENARIOS.map((s) => [s.id, s]))('scenario %s', (_id, sc) => {
         expect(p.x, id).toBeLessThanOrEqual(68)
       }
     }
+  })
   })
 })
 
