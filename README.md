@@ -6,6 +6,8 @@ golem albo rzutem karnym, dobra prowadzi do kolejnego etapu akcji.
 
 **Status: draft** — jedna sytuacja, trzy etapy decyzji.
 
+**Zagraj:** https://polejek.github.io/SwiadomyZawodnik/
+
 ## Sytuacja w drafcie: Obrona 2 na 1
 
 Rywal kontratakuje prawym skrzydłem, drugi napastnik wbiega środkiem, a ty jesteś ostatnim obrońcą przed bramkarzem.
@@ -35,6 +37,13 @@ npm run dev      # http://localhost:3000
 npm test         # testy silnika, przebiegu gry, sytuacji i interfejsu
 npm run build    # wersja produkcyjna w dist/
 ```
+
+## Wdrożenie (GitHub Pages)
+
+Workflow `.github/workflows/deploy.yml` przy każdym pushu i pull requeście uruchamia testy i build. Po zmianie na `main`
+publikuje stronę na GitHub Pages, ale tylko wtedy, gdy testy przejdą.
+
+Jednorazowo w repozytorium: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 
 ## Struktura
 
