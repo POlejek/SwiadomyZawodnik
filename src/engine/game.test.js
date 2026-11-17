@@ -16,7 +16,7 @@ describe('game flow', () => {
     expect(s.phase).toBe('intro')
     for (let i = 0; i < sc.stages.length; i++) {
       expect(s.stageIndex).toBe(i)
-      s = answer(s, correctId(s), { timerOn: false })
+      s = answer(s, correctId(s), { seconds: 0 })
       expect(s.phase).toBe('feedback')
       s = gameReducer(s, { type: 'NEXT' })
     }
@@ -46,8 +46,13 @@ describe('game flow', () => {
     expect(s.results[0].correct).toBe(false)
   })
 
+  it('the speed bonus shrinks with the time used', () => {
+    const half = answer(startGame(sc), correctId(startGame(sc)), { seconds: 20, timeMs: 10000 })
+    expect(half.score).toBe(POINTS_CORRECT + 25)
+  })
+
   it('fast correct decisions earn a speed bonus', () => {
-    const s = answer(startGame(sc), correctId(startGame(sc)), { timerOn: true, timeMs: 0 })
+    const s = answer(startGame(sc), correctId(startGame(sc)), { seconds: 25, timeMs: 0 })
     expect(s.score).toBe(maxScore(sc) / sc.stages.length)
   })
 

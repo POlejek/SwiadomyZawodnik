@@ -1,15 +1,15 @@
 import { initialState } from '../engine/animation'
-import { maxScore } from '../engine/game'
+import { DECISION_OPTIONS, maxScore } from '../engine/game'
 import { load } from '../storage'
 import Pitch from './Pitch'
 
-const STEPS = [
+const steps = (seconds) => [
   ['Obserwuj', 'Akcja rozgrywa się na boisku i zatrzymuje w kluczowym momencie.'],
-  ['Zdecyduj', 'Masz 4 odpowiedzi i 10 sekund — jak w meczu.'],
+  ['Zdecyduj', seconds ? `Masz 4 odpowiedzi i ${seconds} sekund na decyzję.` : 'Masz 4 odpowiedzi. Zastanów się i wybierz.'],
   ['Zobacz skutek', 'Zawodnik robi to, co wybrałeś. Zła decyzja kosztuje: strata, gol, rzut karny.'],
 ]
 
-export default function Home({ scenarios, onPlay, timerOn, onToggleTimer }) {
+export default function Home({ scenarios, onPlay, decisionSeconds, onDecisionSeconds }) {
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:py-12">
       <header className="mb-8 sm:mb-10">
@@ -21,7 +21,7 @@ export default function Home({ scenarios, onPlay, timerOn, onToggleTimer }) {
       </header>
 
       <ol className="mb-10 grid gap-3 sm:grid-cols-3">
-        {STEPS.map(([title, text], i) => (
+        {steps(decisionSeconds).map(([title, text], i) => (
           <li key={title} className="panel !p-4">
             <p className="flex items-center gap-2 font-bold text-white">
               <span className="grid h-6 w-6 place-items-center rounded-full bg-lime-400 text-xs font-black text-slate-900">{i + 1}</span>
@@ -34,13 +34,23 @@ export default function Home({ scenarios, onPlay, timerOn, onToggleTimer }) {
 
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <h2 className="text-xl font-extrabold text-white">Sytuacje</h2>
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">
-          <input type="checkbox" className="h-4 w-4 accent-lime-400" checked={timerOn} onChange={(e) => onToggleTimer(e.target.checked)} />
-          Czas na decyzję (10 s)
+        <label className="flex items-center gap-2 text-sm text-slate-300">
+          Czas na decyzję
+          <select
+            className="min-h-[40px] rounded-lg border border-slate-700 bg-slate-800 px-2 text-sm font-semibold text-slate-100"
+            value={decisionSeconds}
+            onChange={(e) => onDecisionSeconds(Number(e.target.value))}
+          >
+            {DECISION_OPTIONS.map((s) => (
+              <option key={s} value={s}>
+                {s ? `${s} s` : 'bez limitu'}
+              </option>
+            ))}
+          </select>
         </label>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {scenarios.map((sc) => {
           const best = load(`best:${sc.id}`, null)
           return (
@@ -73,10 +83,6 @@ export default function Home({ scenarios, onPlay, timerOn, onToggleTimer }) {
             </article>
           )
         })}
-        <article className="panel flex min-h-[200px] flex-col items-center justify-center gap-2 border-dashed !p-6 text-center">
-          <p className="font-bold text-slate-300">Kolejne sytuacje wkrótce</p>
-          <p className="max-w-xs text-sm text-slate-500">Wyjście spod pressingu, 3 na 2 w ataku, stałe fragmenty gry…</p>
-        </article>
       </div>
     </div>
   )

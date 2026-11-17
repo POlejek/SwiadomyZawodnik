@@ -12,8 +12,8 @@ describe('App', () => {
   it('plays the whole situation: wrong answer, retry, then the right decisions to the summary', async () => {
     const user = userEvent.setup()
     render(<App />)
-    await user.click(screen.getByRole('checkbox', { name: /Czas na decyzję/ })) // no clock in tests
-    await user.click(screen.getByRole('button', { name: 'Graj' }))
+    await user.selectOptions(screen.getByRole('combobox', { name: /Czas na decyzję/ }), '0') // no clock in tests
+    await user.click(screen.getAllByRole('button', { name: 'Graj' })[0])
 
     // Stage 1 — wrong answer first.
     await skip(user)
@@ -44,8 +44,8 @@ describe('App', () => {
   it('answers with the keyboard', async () => {
     const user = userEvent.setup()
     render(<App />)
-    await user.click(screen.getByRole('checkbox', { name: /Czas na decyzję/ }))
-    await user.click(screen.getByRole('button', { name: 'Graj' }))
+    await user.selectOptions(screen.getByRole('combobox', { name: /Czas na decyzję/ }), '0')
+    await user.click(screen.getAllByRole('button', { name: 'Graj' })[0])
     await skip(user)
     await user.keyboard('1')
     expect(screen.getByRole('button', { name: 'Pomiń animację' })).toBeInTheDocument()

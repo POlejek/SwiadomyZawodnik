@@ -37,7 +37,7 @@ function Player({ entity, pos }) {
         <>
           <circle r={2.7} fill="none" stroke="#fde047" strokeWidth={0.35} className="you-ring" />
           {!down && (
-            <g transform="translate(0 -3.7)">
+            <g transform={`translate(0 ${pos.y < 9 ? 3.7 : -3.7})`}>
               <rect x={-1.9} y={-0.95} width={3.8} height={1.9} rx={0.7} fill="#fde047" />
               <text textAnchor="middle" dominantBaseline="central" fontSize={1.3} fontWeight={800} fill="#1f2937">
                 TY
@@ -162,7 +162,8 @@ export default function Pitch({ entities, world, highlights = [], captions = [],
         {highlights.map((h, i) => (
           <HighlightShape key={i} h={h} world={world} />
         ))}
-        {entities.map((e) => (
+        {/* "TY" first, so nobody near them is hidden under the ring and label. */}
+        {[...entities].sort((a, b) => (b.you ? 1 : 0) - (a.you ? 1 : 0)).map((e) => (
           <Player key={e.id} entity={e} pos={world.players[e.id]} />
         ))}
         <Ball ball={world.ball} />

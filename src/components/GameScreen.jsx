@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { endState, eventsAt, stateAt } from '../engine/animation'
-import { DECISION_SECONDS, choiceResult, currentStage, gameReducer, maxScore, startGame, stars } from '../engine/game'
+import { choiceResult, currentStage, gameReducer, maxScore, startGame, stars } from '../engine/game'
 import { load, save } from '../storage'
 import Pitch from './Pitch'
 import { useClipPlayer } from './useClipPlayer'
@@ -16,7 +16,8 @@ function shuffle(list) {
   return a
 }
 
-export default function GameScreen({ scenario, timerOn, onExit }) {
+export default function GameScreen({ scenario, decisionSeconds, onExit }) {
+  const timerOn = decisionSeconds > 0
   const [state, dispatch] = useReducer(gameReducer, scenario, (s) => startGame(s))
   const stage = currentStage(state)
   const entities = scenario.entities
@@ -36,10 +37,10 @@ export default function GameScreen({ scenario, timerOn, onExit }) {
   })
 
   const world = useMemo(() => {
-    if (playing && clip) return stateAt(clip, clipStart, entities, Math.min(t, clip.duration))
-    if (state.phase === 'feedback' || state.phase === 'summary') return endState(result?.clip, state.questionState, entities)
+    if (playing && clip) return stateAt(clip, clipStart, entities, Math.min(t, clip.duration), scenario.facingUp)
+    if (state.phase === 'feedback' || state.phase === 'summary') return endState(result?.clip, state.questionState, entities, scenario.facingUp)
     return state.questionState
-  }, [playing, clip, clipStart, entities, t, state.phase, state.questionState, result])
+  }, [playing, clip, clipStart, entities, t, state.phase, state.questionState, result, scenario.facingUp])
 
   // Each caption goes to the end of the pitch away from where the ball is when it appears.
   const placedEvents = useMemo(
@@ -47,10 +48,10 @@ export default function GameScreen({ scenario, timerOn, onExit }) {
       clip && {
         events: (clip.events ?? []).map((ev) => ({
           ...ev,
-          pos: stateAt(clip, clipStart, entities, ev.t).ball.y < 24 ? 'bottom' : 'top',
+          pos: stateAt(clip, clipStart, entities, ev.t, scenario.facingUp).ball.y < 24 ? 'bottom' : 'top',
         })),
       },
-    [clip, clipStart, entities],
+    [clip, clipStart, entities, scenario.facingUp],
   )
   const captions = playing && clip ? eventsAt(placedEvents, t) : []
   const highlights = state.phase === 'feedback' ? result.highlights : []
@@ -69,16 +70,16 @@ export default function GameScreen({ scenario, timerOn, onExit }) {
     const id = setInterval(() => {
       const ms = performance.now() - askedAt.current
       setElapsed(ms)
-      if (ms >= DECISION_SECONDS * 1000) {
+      if (ms >= decisionSeconds * 1000) {
         clearInterval(id)
         dispatch({ type: 'TIMEOUT' })
       }
     }, 100)
     return () => clearInterval(id)
-  }, [state.phase, state.playId, timerOn])
+  }, [state.phase, state.playId, decisionSeconds])
 
   const choose = (optionId) =>
-    dispatch({ type: 'CHOOSE', optionId, timeMs: performance.now() - askedAt.current, timerOn })
+    dispatch({ type: 'CHOOSE', optionId, timeMs: performance.now() - askedAt.current, seconds: decisionSeconds })
 
   // Keyboard: 1–4 or A–D picks an answer.
   useEffect(() => {
@@ -109,12 +110,12 @@ export default function GameScreen({ scenario, timerOn, onExit }) {
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start">
         <div className="pitch-frame">
           <Pitch entities={entities} world={world} highlights={highlights} captions={captions} />
-          <Legend />
+          <Legend entities={entities} />
         </div>
         <section className="panel" aria-label="Decyzja">
           {state.phase === 'intro' && <Watching onSkip={skip} stage={stage} />}
           {state.phase === 'question' && (
-            <Question stage={stage} options={options} onChoose={choose} timerOn={timerOn} elapsed={elapsed} />
+            <Question stage={stage} options={options} onChoose={choose} seconds={decisionSeconds} elapsed={elapsed} />
           )}
           {state.phase === 'outcome' && <Playing result={result} choice={state.choice} slow={state.slow} onSkip={skip} />}
           {state.phase === 'feedback' && (
@@ -165,21 +166,32 @@ function TopBar({ scenario, state, onExit }) {
   )
 }
 
-function Legend() {
+function Legend({ entities }) {
+  const you = entities.find((e) => e.you)
+  const has = (team) => entities.some((e) => e.team === team && !e.you)
   return (
     <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-xs text-slate-400">
       <span className="flex items-center gap-1.5">
-        <i className="dot bg-blue-600 ring-2 ring-yellow-300" /> Ty (nr 4)
+        <i className="dot bg-blue-600 ring-2 ring-yellow-300" /> Ty (nr {you.number})
       </span>
-      <span className="flex items-center gap-1.5">
-        <i className="dot bg-blue-600" /> Twoja drużyna
-      </span>
+      {has('home') && (
+        <span className="flex items-center gap-1.5">
+          <i className="dot bg-blue-600" /> Twoja drużyna
+        </span>
+      )}
       <span className="flex items-center gap-1.5">
         <i className="dot bg-red-600" /> Rywale
       </span>
-      <span className="flex items-center gap-1.5">
-        <i className="dot bg-yellow-400" /> Bramkarz
-      </span>
+      {has('homeGK') && (
+        <span className="flex items-center gap-1.5">
+          <i className="dot bg-yellow-400" /> Twój bramkarz
+        </span>
+      )}
+      {has('awayGK') && (
+        <span className="flex items-center gap-1.5">
+          <i className="dot bg-gray-900 ring-1 ring-slate-300" /> Bramkarz rywali
+        </span>
+      )}
     </div>
   )
 }
@@ -197,9 +209,10 @@ function Watching({ stage, onSkip }) {
   )
 }
 
-function Question({ stage, options, onChoose, timerOn, elapsed }) {
-  const left = Math.max(0, DECISION_SECONDS - elapsed / 1000)
-  const pct = (left / DECISION_SECONDS) * 100
+function Question({ stage, options, onChoose, seconds, elapsed }) {
+  const timerOn = seconds > 0
+  const left = Math.max(0, seconds - elapsed / 1000)
+  const pct = timerOn ? (left / seconds) * 100 : 0
   return (
     <div className="space-y-4">
       <div>

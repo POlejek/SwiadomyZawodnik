@@ -5,7 +5,8 @@
 // Clip: {
 //   duration,                                  // seconds
 //   tracks: { [playerId]: [{ t, x, y, pose? }] },// pose 'down' = lying (slide, dive, fall)
-//   ball:   [{ t, on: playerId } | { t, x, y, arc? }], // arc = peak height in metres of the flight INTO this key
+//   ball:   [{ t, on: playerId } | { t, x, y, arc?, ease? }], // arc = peak height (m) of the flight INTO this key;
+//                                                             // ease: 'linear' keeps the speed constant (a pass split over two clips)
 //   events: [{ t, text, tone?: 'info'|'good'|'bad', dur? }],
 // }
 
@@ -43,14 +44,16 @@ export function playerAt(keys, start, t) {
   return { x: lerp(k0.x, k1.x, e), y: lerp(k0.y, k1.y, e), pose: k0.pose }
 }
 
-function feet(entities, id, pos) {
-  const team = entities.find((e) => e.id === id)?.team
-  const dir = team === 'away' ? -1 : 1 // opponents attack towards y = 0
+// The team that plays towards the goal at the top of the screen (y = 0) keeps the ball in front of them, upwards.
+// Default 'away': opponents attacking our goal. Attacking scenarios set `facingUp: 'home'` on the scenario.
+function feet(entities, id, pos, facingUp = 'away') {
+  const team = entities.find((e) => e.id === id)?.team ?? ''
+  const dir = team === facingUp ? -1 : 1
   return { x: pos.x, y: pos.y + dir * BALL_OFFSET }
 }
 
 /** Whole world at time t of a clip that starts from `start`. */
-export function stateAt(clip, start, entities, t) {
+export function stateAt(clip, start, entities, t, facingUp) {
   const players = {}
   for (const e of entities) {
     players[e.id] = playerAt(clip?.tracks?.[e.id], start.players[e.id], t)
@@ -59,7 +62,7 @@ export function stateAt(clip, start, entities, t) {
 
   const ballStart = start.ball.owner ? { on: start.ball.owner } : { x: start.ball.x, y: start.ball.y }
   const keys = withStart(clip?.ball, ballStart)
-  const resolve = (k, time) => (k.on ? feet(entities, k.on, playerPos(k.on, time)) : { x: k.x, y: k.y })
+  const resolve = (k, time) => (k.on ? feet(entities, k.on, playerPos(k.on, time), facingUp) : { x: k.x, y: k.y })
 
   let ball
   if (t <= keys[0].t) {
@@ -79,7 +82,7 @@ export function stateAt(clip, start, entities, t) {
       const u = clamp01((t - k0.t) / (k1.t - k0.t))
       const p0 = resolve(k0, k0.t)
       const p1 = resolve(k1, k1.t)
-      const e = easeOut(u)
+      const e = k1.ease === 'linear' ? u : easeOut(u)
       ball = { x: lerp(p0.x, p1.x, e), y: lerp(p0.y, p1.y, e), h: (k1.arc ?? 0) * 4 * u * (1 - u), owner: null }
     }
   }
@@ -87,9 +90,9 @@ export function stateAt(clip, start, entities, t) {
 }
 
 /** World at the end of a clip — the starting point of whatever comes next. */
-export function endState(clip, start, entities) {
+export function endState(clip, start, entities, facingUp) {
   if (!clip) return start
-  const s = stateAt(clip, start, entities, clip.duration)
+  const s = stateAt(clip, start, entities, clip.duration, facingUp)
   return { players: s.players, ball: { x: s.ball.x, y: s.ball.y, h: 0, owner: s.ball.owner } }
 }
 
@@ -105,6 +108,6 @@ export function initialState(scenario) {
   const b = scenario.ball
   return {
     players,
-    ball: b.on ? { ...feet(scenario.entities, b.on, players[b.on]), h: 0, owner: b.on } : { x: b.x, y: b.y, h: 0, owner: null },
+    ball: b.on ? { ...feet(scenario.entities, b.on, players[b.on], scenario.facingUp), h: 0, owner: b.on } : { x: b.x, y: b.y, h: 0, owner: null },
   }
 }

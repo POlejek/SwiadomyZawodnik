@@ -5,7 +5,8 @@ import { endState, initialState } from './animation'
 //   feedback → NEXT (correct)  → next stage intro, or summary after the last stage
 //   feedback → RETRY (wrong)   → same question again;  REVEAL → plays the correct answer (no points)
 
-export const DECISION_SECONDS = 10
+export const DECISION_OPTIONS = [15, 25, 40, 0] // seconds; 0 = no time limit
+export const DEFAULT_DECISION_SECONDS = 25
 export const POINTS_CORRECT = 100
 export const POINTS_SPEED_MAX = 50
 
@@ -45,7 +46,7 @@ export function choiceResult(stage, choice) {
 
 function enterStage(base, stageIndex, introStart) {
   const stage = base.scenario.stages[stageIndex]
-  const questionState = endState(stage.intro, introStart, base.scenario.entities)
+  const questionState = endState(stage.intro, introStart, base.scenario.entities, base.scenario.facingUp)
   return {
     ...base,
     stageIndex,
@@ -70,20 +71,21 @@ export function startGame(scenario, runId = 0) {
   return enterStage(base, 0, initialState(scenario))
 }
 
-function points(correct, timeMs, timerOn) {
+/** Points for a first attempt; with a clock, a faster decision earns up to POINTS_SPEED_MAX extra. */
+function points(correct, timeMs, seconds) {
   if (!correct) return 0
-  if (!timerOn || timeMs == null) return POINTS_CORRECT
-  const left = Math.max(0, 1 - timeMs / (DECISION_SECONDS * 1000))
+  if (!seconds || timeMs == null) return POINTS_CORRECT
+  const left = Math.max(0, 1 - timeMs / (seconds * 1000))
   return POINTS_CORRECT + Math.round(POINTS_SPEED_MAX * left)
 }
 
-function decide(state, choice, timeMs, timerOn) {
+function decide(state, choice, timeMs, seconds) {
   const stage = currentStage(state)
   const tries = state.attempts[stage.id] ?? 0
   const result = choiceResult(stage, choice)
   let { score, results } = state
   if (tries === 0) {
-    const gained = points(result.correct, timeMs, timerOn)
+    const gained = points(result.correct, timeMs, seconds)
     score += gained
     results = [
       ...results,
@@ -119,10 +121,10 @@ export function gameReducer(state, action) {
       return state.phase === 'intro' ? { ...state, phase: 'question' } : state
     case 'CHOOSE':
       if (state.phase !== 'question') return state
-      return decide(state, { optionId: action.optionId }, action.timeMs, action.timerOn)
+      return decide(state, { optionId: action.optionId }, action.timeMs, action.seconds)
     case 'TIMEOUT':
       if (state.phase !== 'question') return state
-      return decide(state, { timedOut: true }, null, true)
+      return decide(state, { timedOut: true }, null, 0)
     case 'OUTCOME_DONE':
       return state.phase === 'outcome' ? { ...state, phase: 'feedback' } : state
     case 'REPLAY':
@@ -140,7 +142,7 @@ export function gameReducer(state, action) {
       const result = choiceResult(stage, state.choice)
       if (!result.correct) return state
       if (state.stageIndex === state.scenario.stages.length - 1) return { ...state, phase: 'summary' }
-      const next = endState(result.clip, state.questionState, state.scenario.entities)
+      const next = endState(result.clip, state.questionState, state.scenario.entities, state.scenario.facingUp)
       return enterStage(state, state.stageIndex + 1, next)
     }
     default:

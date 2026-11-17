@@ -4,28 +4,28 @@ Gra decyzyjna dla piłkarzy. Zawodnik ogląda animację sytuacji boiskowej, akcj
 i trzeba wybrać jedną z 4 odpowiedzi. Postać „TY” wykonuje dokładnie to, co wybrał gracz — zła decyzja kończy się stratą,
 golem albo rzutem karnym, dobra prowadzi do kolejnego etapu akcji.
 
-**Status: draft** — jedna sytuacja, trzy etapy decyzji.
-
 **Zagraj:** https://polejek.github.io/SwiadomyZawodnik/
 
-## Sytuacja w drafcie: Obrona 2 na 1
+## Sytuacje
 
-Rywal kontratakuje prawym skrzydłem, drugi napastnik wbiega środkiem, a ty jesteś ostatnim obrońcą przed bramkarzem.
-
-| Etap | Moment | Dobra decyzja | Złe decyzje (skutek) |
+| Sytuacja | Kategoria | Etapy decyzji | Dobra decyzja |
 |---|---|---|---|
-| 1. Kontra 2 na 1 | rywale w środkowej strefie | cofam się, ustawiam między nimi, opóźniam | doskok (podanie → gol), krycie środkowego (wolna droga → gol), pułapka ofsajdowa w pojedynkę (podanie za plecy → gol) |
-| 2. Wejście w pole karne | zawodnik z piłką na linii pola karnego | staję w linii podania, kieruję go do linii końcowej → strzał z ostrego kąta, bramkarz broni | wślizg (faul → rzut karny), cofnięcie na linię bramkową (strzał bez presji → gol), bieg do środkowego (wolna droga → gol) |
-| 3. Odbita piłka | piłka po obronie bramkarza obok ciebie | wybijam mocno w bok, na aut | przyjęcie i drybling (strata → gol), podanie do leżącego bramkarza (przechwyt → gol), wybicie na środek (strzał z dystansu → gol) |
+| Obrona 2 na 1 | Obrona | 3 | opóźniaj → zamknij podanie do środka → wybij odbitą piłkę w bok |
+| Atak 2 na 1 | Atak | 2 | prowadź piłkę na obrońcę → podaj, gdy wyjdzie do ciebie |
+| Wyjście spod pressingu | Budowanie gry | 2 | przyjęcie kierunkowe od napastnika → podanie do szóstki przez linię pressingu |
+| Pojedynek 1 na 1 przy linii | Obrona | 2 | skróć dystans w czasie lotu piłki → wejdź ciałem między rywala a piłkę |
+| Wbiegnięcie w pole karne | Wykończenie | 2 | bliższy słupek przed obrońcę → dotknięcie w dalszy róg |
+| Kontrpressing po stracie | Przejście do obrony | 2 | natychmiastowy doskok → atak we dwóch na osaczonego rywala |
 
-Do tego w każdym etapie: **10 sekund na decyzję** (można wyłączyć) — brak decyzji też ma swój skutek na boisku.
+Każdy etap ma 4 odpowiedzi i dla każdej osobną animację skutku. Do tego jest skutek braku decyzji, gdy skończy się czas.
 
 ## Jak gra działa
 
 - **Obserwuj → Zdecyduj → Zobacz skutek.** Po każdej odpowiedzi: animacja skutku, wyjaśnienie trenerskie i rysunek
   na boisku (strzałki, linia podania).
 - Zła odpowiedź: *Spróbuj jeszcze raz*, *Powtórka w zwolnionym tempie*, a po dwóch nietrafionych — *Pokaż dobrą decyzję*.
-- Punkty liczą się tylko za pierwszą próbę: 100 za dobrą decyzję + do 50 za szybkość. Na koniec gwiazdki,
+- **Czas na decyzję** wybiera się na ekranie startowym: 15 s, 25 s (domyślnie), 40 s albo bez limitu.
+- Punkty liczą się tylko za pierwszą próbę: 100 za dobrą decyzję + do 50 za szybkość (gdy czas jest włączony). Na koniec gwiazdki,
   podsumowanie decyzji i zasady do zapamiętania. Rekord zapisuje się w przeglądarce.
 - Odpowiedzi są tasowane przy każdej grze, żeby uczyć się piłki, a nie położenia przycisku. Skróty: klawisze 1–4 / A–D.
 
@@ -68,13 +68,16 @@ src/
 Sytuacja to sam plik z danymi — bez zmian w kodzie gry. Skopiuj `src/scenarios/obrona2v1Skrzydlo.js`, zmień treść
 i dopisz ją w `src/scenarios/index.js`.
 
-**Układ współrzędnych (metry):** `x` 0–68 w poprzek boiska (od lewej), `y` od **naszej** linii bramkowej (0, góra ekranu)
-do linii środkowej (52,5). Rywale atakują w górę ekranu, więc ich prawe skrzydło jest po prawej stronie.
+**Układ współrzędnych (metry):** widać zawsze połowę boiska z bramką u góry ekranu. `x` 0–68 w poprzek boiska (od lewej),
+`y` od linii bramkowej (0, góra ekranu) do linii środkowej (52,5).
+- Sytuacje w obronie i przy wyprowadzaniu piłki: u góry jest **nasza** bramka (`homeGK`), rywale grają w górę ekranu.
+- Sytuacje w ataku: ustaw `facingUp: 'home'`. Wtedy u góry jest bramka **rywala** (`awayGK`), a my gramy w górę.
 Pole karne: `x` 13,84–54,16, `y` 0–16,5. Bramka: `x` 30,34–37,66.
 
 ```js
 {
-  entities: [{ id: 'ty', team: 'home', number: 4, x: 40, y: 30, you: true }, ...], // team: home | homeGK | away
+  facingUp: 'away',                        // która drużyna gra w górę ekranu: 'away' (domyślnie) albo 'home'
+  entities: [{ id: 'ty', team: 'home', number: 4, x: 40, y: 30, you: true }, ...], // team: home | homeGK | away | awayGK
   ball: { on: 'a' },                       // piłka u zawodnika albo { x, y }
   stages: [{
     title, question, lesson,               // lesson = zasada pokazywana po dobrej decyzji i w podsumowaniu
@@ -82,7 +85,8 @@ Pole karne: `x` 13,84–54,16, `y` 0–16,5. Bramka: `x` 30,34–37,66.
     options: [                             // dokładnie 4, dokładnie jedna correct: true
       { id, label, correct, outcome, feedback, clip: KLIP, highlights: [...] },
     ],
-    timeout: { outcome, feedback, clip: KLIP },   // co się dzieje, gdy skończy się czas
+    intro: null,                           // etap może zacząć się od razu od pytania
+    timeout: { outcome, feedback, clip: KLIP },   // skutek końca czasu; albo { optionId, feedback } = animacja jednej z odpowiedzi
   }],
 }
 ```
@@ -98,6 +102,7 @@ więc etapy łączą się płynnie:
   ball: [{ t: 0.8, on: 'a' },                            // piłka przy nodze zawodnika „a” do 0,8 s
          { t: 1.5, on: 'b' },                            // podanie do „b” (dociera w 1,5 s)
          { t: 2.1, x: 36, y: -0.6, arc: 1.2 }],          // strzał do bramki; arc = wysokość lotu w metrach
+                                                         // ease: 'linear' = stała prędkość (pytanie w trakcie lotu piłki)
   events: [{ t: 2.2, text: 'GOL', tone: 'bad' }],        // napisy na boisku: info | good | bad
 }
 ```
@@ -108,7 +113,7 @@ czy strzał, który nie trafia do bramki.
 
 ## Pomysły na kolejne kroki
 
-- Więcej sytuacji: wyjście spod pressingu, 3 na 2 w ataku, obrona przy dośrodkowaniu, stałe fragmenty.
+- Więcej sytuacji: 3 na 2 w ataku, obrona przy dośrodkowaniu, stałe fragmenty gry, gra bramkarza.
 - Rozgałęzienia: zła (ale nie katastrofalna) decyzja prowadzi do innego, trudniejszego etapu zamiast końca akcji.
 - Widok z perspektywy zawodnika (kamera za plecami „TY”), poziomy trudności z krótszym czasem.
 - Profile zawodników i postępy dla trenera; instalacja jako aplikacja na telefon (PWA).
