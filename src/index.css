@@ -1,0 +1,128 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  background: #0b1220;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(1200px 600px at 80% -10%, rgba(132, 204, 22, 0.08), transparent 60%), #0b1220;
+  color: #e2e8f0;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid #a3e635;
+  outline-offset: 2px;
+}
+
+@layer components {
+  .eyebrow {
+    @apply text-xs font-bold uppercase tracking-[0.14em] text-lime-400;
+  }
+  .panel {
+    @apply rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-xl shadow-black/20;
+  }
+  .pitch-frame {
+    @apply rounded-2xl border border-slate-800 bg-slate-900/70 p-2 sm:p-3;
+  }
+  .tag {
+    @apply rounded-full bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-300;
+  }
+  .btn-primary {
+    @apply inline-flex min-h-[44px] items-center justify-center rounded-xl bg-lime-400 px-5 font-bold text-slate-900 transition hover:bg-lime-300 active:scale-[0.98];
+  }
+  .btn-secondary {
+    @apply inline-flex min-h-[44px] items-center justify-center rounded-xl border border-slate-700 bg-slate-800/60 px-4 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-800;
+  }
+  .btn-ghost {
+    @apply grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-slate-800 text-lg text-slate-300 transition hover:border-slate-600 hover:text-white;
+  }
+  .answer {
+    @apply flex min-h-[52px] w-full items-center gap-3 rounded-xl border border-slate-700 bg-slate-800/60 px-3 py-2.5 text-left font-semibold leading-snug text-slate-100 transition hover:border-lime-400/70 hover:bg-slate-800 active:scale-[0.99];
+  }
+  .answer-key {
+    @apply grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-slate-700 text-sm font-black text-lime-300;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider;
+  }
+  .badge-good {
+    @apply bg-lime-400/15 text-lime-300;
+  }
+  .badge-bad {
+    @apply bg-red-500/15 text-red-300;
+  }
+  .score {
+    @apply flex min-w-[56px] flex-col items-center rounded-xl border border-slate-800 bg-slate-900 px-2 py-1 text-lg font-black leading-none text-white;
+  }
+  .step {
+    @apply block h-2.5 w-2.5 rounded-full;
+  }
+  .step-todo {
+    @apply bg-slate-700;
+  }
+  .step-current {
+    @apply w-6 bg-lime-400;
+  }
+  .step-good {
+    @apply bg-lime-400/60;
+  }
+  .step-bad {
+    @apply bg-red-500/70;
+  }
+  .dot {
+    @apply inline-block h-3 w-3 rounded-full;
+  }
+  .caption {
+    @apply rounded-full bg-slate-950/80 px-3 py-1 text-xs font-bold text-white shadow-lg backdrop-blur sm:px-4 sm:py-1.5 sm:text-sm;
+    animation: caption-in 0.25s ease-out;
+  }
+  .caption-good {
+    @apply bg-lime-400 text-slate-900;
+  }
+  .caption-bad {
+    @apply bg-red-600 text-white;
+  }
+  .caption-info {
+    @apply bg-slate-950/85 text-lime-300;
+  }
+  .caption-goal {
+    @apply px-6 py-2 text-2xl font-black tracking-widest sm:text-4xl;
+    animation: goal-in 0.35s cubic-bezier(0.2, 1.6, 0.4, 1);
+  }
+}
+
+.you-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: you-pulse 1.4s ease-in-out infinite;
+}
+
+.hl-label {
+  paint-order: stroke;
+  stroke: rgba(11, 18, 32, 0.85);
+  stroke-width: 0.7px;
+  stroke-linejoin: round;
+}
+
+@keyframes you-pulse {
+  0%, 100% { transform: scale(0.92); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0.55; }
+}
+@keyframes caption-in {
+  from { transform: translateY(-6px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes goal-in {
+  from { transform: scale(0.4); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .you-ring, .caption, .caption-goal { animation: none; }
+}
