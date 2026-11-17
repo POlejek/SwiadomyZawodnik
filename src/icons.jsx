@@ -58,13 +58,13 @@ const RULES = [
   [/wybijam/i, 'clear'],
   [/wślizg/i, 'tackle'],
   [/koszulk|protestuj/i, 'card'],
-  [/podaj|przepuszczam/i, 'pass'],
+  [/podaj|przepuszczam|odgryw/i, 'pass'],
   [/czekam|zatrzymuj|zostaję|zwalniam|odwracam/i, 'wait'],
   [/cofam|wracam|odpuszczam|odsuwam/i, 'retreat'],
-  [/staję|ustawiam się w/i, 'block'],
+  [/staję|ustawiam się/i, 'block'],
   [/doskak|atakuję|skracam|wchodzę ciałem|biegnę|wychodzę/i, 'press'],
-  [/^na (bliższy|dalszy)/i, 'run'],
-  [/prowadzę|uciekam|minąć|przyjmuję/i, 'dribble'],
+  [/^na (bliższy|dalszy)|przesuwam|podbiegam|uciekam daleko/i, 'run'],
+  [/prowadzę|uciekam|minąć|przyjmuję|obracam/i, 'dribble'],
 ]
 
 export const ICON_NAMES = Object.keys(PATHS)

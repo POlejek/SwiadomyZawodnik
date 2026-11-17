@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { faza } from '../taxonomy'
 
 /** Link with a set of situations chosen by the coach — no accounts needed: the set lives in the link itself. */
 export function setLink(ids, title) {
@@ -58,7 +59,7 @@ export default function CoachPanel({ scenarios, onClose }) {
             <label key={sc.id} className="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-800 px-3 py-2.5 text-sm text-slate-200">
               <input type="checkbox" className="h-4 w-4 accent-lime-400" checked={ids.includes(sc.id)} onChange={() => toggle(sc.id)} />
               <span className="flex-1">{sc.title}</span>
-              <span className="text-xs text-slate-500">{sc.category}</span>
+              <span className="text-xs text-slate-500">{faza(sc.faza)?.label}</span>
             </label>
           ))}
         </div>

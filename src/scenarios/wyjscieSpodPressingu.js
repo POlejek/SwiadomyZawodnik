@@ -8,7 +8,9 @@ export const wyjscieSpodPressingu = {
   id: 'wyjscie-spod-pressingu',
   title: 'Wyjście spod pressingu',
   subtitle: 'Bramkarz podaje do ciebie, napastnik rywala doskakuje',
-  category: 'Budowanie gry',
+  faza: 'atak',
+  strefa: 'tercja-obronna',
+  liczebnosc: '2v2',
   positions: ['obronca'],
   level: 'Średni',
   brief:
@@ -29,6 +31,7 @@ export const wyjscieSpodPressingu = {
   stages: [
     {
       id: 'przyjecie',
+      fundament: 'przyjecie-kierunkowe',
       title: 'Przyjęcie pod presją',
       question: 'Bramkarz podaje do ciebie, a napastnik rywala biegnie na ciebie od środka. Jak przyjmujesz piłkę?',
       lesson:
@@ -154,6 +157,7 @@ export const wyjscieSpodPressingu = {
 
     {
       id: 'podanie-przez-linie',
+      fundament: 'podanie-przez-linie',
       title: 'Pierwsze podanie',
       question: 'Napastnik goni cię z tyłu. Szóstka i boczny obrońca pokazują się do gry. Patrz na skrzydłowego rywala! Co robisz?',
       lesson:

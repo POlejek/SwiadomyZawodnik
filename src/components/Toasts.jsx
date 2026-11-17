@@ -6,6 +6,7 @@ export default function Toasts({ toasts }) {
     <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex flex-col items-center gap-2 px-4" aria-live="polite">
       {toasts.map((t) => {
         const b = BADGES[t.badge]
+        if (!b) return null
         return (
           <div key={t.id} className="toast">
             <span className="text-2xl" aria-hidden>

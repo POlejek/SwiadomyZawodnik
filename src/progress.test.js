@@ -10,7 +10,9 @@ import {
   recordScenarioComplete,
   recordTraining,
   recordWhatIfAll,
-  streak,
+  fullWeeks,
+  weekProgress,
+  weekStart,
 } from './progress'
 
 const T = '2026-11-17'
@@ -37,11 +39,13 @@ describe('spaced repetition', () => {
 })
 
 describe('streak, level, medals, badges', () => {
-  it('counts training days in a row, forgiving one missed day', () => {
-    const p = { ...emptyProgress(), trainingDays: ['2026-11-10', '2026-11-12', '2026-11-13', '2026-11-15'] }
-    expect(streak(p, '2026-11-16')).toBe(4)
-    expect(streak(p, '2026-11-18')).toBe(0)
-    expect(streak({ ...p, trainingDays: ['2026-11-01', '2026-11-15'] }, '2026-11-15')).toBe(1)
+  it('weekly goal: counts this week only (Monday–Sunday), never takes anything away', () => {
+    expect(weekStart('2026-11-17')).toBe('2026-11-16') // Tuesday → Monday
+    expect(weekStart('2026-11-22')).toBe('2026-11-16') // Sunday → same week
+    const p = { ...emptyProgress(), trainingDays: ['2026-11-12', '2026-11-16', '2026-11-18', '2026-11-18'] }
+    expect(weekProgress(p, '2026-11-19')).toEqual({ done: 2, goal: 3, reached: false })
+    expect(weekProgress(p, '2026-11-23')).toMatchObject({ done: 0 }) // new week, fresh start
+    expect(fullWeeks({ ...p, trainingDays: [...p.trainingDays, '2026-11-20'] })).toBe(1)
   })
   it('levels and medals', () => {
     expect(level(0).name).toBe('Debiutant')
@@ -62,15 +66,15 @@ describe('streak, level, medals, badges', () => {
     const both = recordScenarioComplete(recordScenarioComplete(r.progress, 'x', ['x', 'y'], T).progress, 'y', ['x', 'y'], T)
     expect(both.earned).toEqual(['komplet'])
   })
-  it('daily training gives XP and streak badges', () => {
+  it('daily training gives XP and the weekly-goal badge (days need not be in a row)', () => {
     let p = emptyProgress()
     const earned = []
-    for (const d of ['2026-11-15', '2026-11-16', '2026-11-17']) {
+    for (const d of ['2026-11-16', '2026-11-18', '2026-11-21']) {
       const r = recordTraining(p, d)
       p = r.progress
       earned.push(...r.earned)
     }
     expect(p.xp).toBe(150)
-    expect(earned).toEqual(['trening-dnia', 'seria-3'])
+    expect(earned).toEqual(['trening-dnia', 'pelny-tydzien'])
   })
 })

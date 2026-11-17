@@ -15,7 +15,26 @@ golem albo rzutem karnym, dobra prowadzi do kolejnego etapu akcji.
 | Wyjście spod pressingu | Budowanie gry | 2 | przyjęcie kierunkowe od napastnika → podanie do szóstki przez linię pressingu |
 | Pojedynek 1 na 1 przy linii | Obrona | 2 | skróć dystans w czasie lotu piłki → wejdź ciałem między rywala a piłkę |
 | Wbiegnięcie w pole karne | Wykończenie | 2 | bliższy słupek przed obrońcę → dotknięcie w dalszy róg |
-| Kontrpressing po stracie | Przejście do obrony | 2 | natychmiastowy doskok → atak we dwóch na osaczonego rywala |
+| Kontrpressing po stracie | Przejście do obrony | 2 | blisko → doskok, daleko → powrót (sygnał) → atak we dwóch |
+| Gra tyłem do bramki | Atak | 1 | obrońca blisko → odegraj, daleko → obróć się (sygnał) |
+| Asekuracja kolegi | Obrona | 2 | skośnie za kolegą → po minięciu kolegi zamiana ról |
+| Pokaż się do gry | Atak | 2 | wolna linia podania, bokiem → przyjęcie w wolne miejsce i gra do przodu |
+
+## Kategoryzacja (na setki sytuacji)
+
+Każda sytuacja ma: **fazę gry** (atak, obrona, przejście do obrony/ataku, stałe fragmenty), **strefę**
+(tercja obronna / środek / tercja ataku), **liczebność** (np. `2v1`), **pozycje** i **poziom**. Każdy etap (decyzja)
+uczy jednego **fundamentu gry**. Fundamenty są pogrupowane: atak indywidualnie i grupowo, obrona indywidualnie
+i grupowo, przejścia. Lista jest w `src/taxonomy.js`.
+
+Lista fundamentów jest robocza. Opiera się na powszechnym podziale z polskiego szkolenia dzieci i młodzieży i trzeba
+ją dopasować co do słowa do „Dorastania w grze” (M. Ludwiczak, T. Tchórz), rozdział o fundamentach gry.
+
+- **Biblioteka sytuacji** na ekranie startowym ma zakładki faz gry z licznikami, wyszukiwarkę i filtry
+  (fundament, pozycja, liczebność, poziom, nierozegrane / do powtórki). Sytuacje są pogrupowane według grup fundamentów.
+  Filtry zapamiętują się w przeglądarce.
+- **Moje postępy** pokazują medale według fundamentów. Medal fundamentu to najsłabszy medal z jego decyzji.
+- Testy pilnują, żeby każda nowa sytuacja była poprawnie skategoryzowana (`checkTaxonomy`).
 
 Każdy etap ma 4 odpowiedzi i dla każdej osobną animację skutku. Do tego jest skutek braku decyzji, gdy skończy się czas.
 
@@ -45,9 +64,10 @@ Grupa docelowa: U11–U16.
   potem nowe etapy, potem reszta losowo. **Tempo meczu:** każda najlepsza decyzja skraca czas o 3 s (minimum 8 s),
   a inna przywraca czas wyjściowy.
 - **Powtórki rozłożone w czasie (system Leitnera):** zła decyzja wraca jutro, a najlepsza po 3, 7, 14 i 30 dniach.
-- **Seria dni:** jeden dzień przerwy jej nie przerywa.
+- **Cel tygodnia zamiast serii dni:** 3 treningi dnia w tygodniu (poniedziałek–niedziela). Nic się nie traci, każdy tydzień
+  zaczyna się od nowa, a cel pasuje do tygodnia młodego zawodnika (treningi klubowe, mecze, szkoła).
 - **Medale za zasady** (każdy etap uczy jednej zasady): brąz za 1, srebro za 3, złoto za 5 najlepszych decyzji.
-- **Odznaki:** Pierwszy krok, Analityk, Błyskawica, Trening dnia, Seria 3 i 7 dni, Komplet, Złoty zawodnik.
+- **Odznaki:** Pierwszy krok, Analityk, Błyskawica, Trening dnia, Pełny tydzień, 4 pełne tygodnie (nie muszą być pod rząd), Komplet, Złoty zawodnik.
 - **XP i poziomy:** Debiutant → Talent → Zawodnik ligowy → Kapitan → Reprezentant.
 - **Ikony przy odpowiedziach** (podanie, strzał, drybling, doskok, cofnięcie…): mniej czytania dla młodszych.
 - **Zestaw od trenera:** trener wybiera sytuacje i wysyła link (np. `…/#zestaw=atak-2v1,kontrpressing&tytul=Tydzień 12`).
@@ -113,11 +133,13 @@ Pole karne: `x` 13,84–54,16, `y` 0–16,5. Bramka: `x` 30,34–37,66.
 
 ```js
 {
+  faza: 'obrona', strefa: 'tercja-obronna', liczebnosc: '2v1', positions: ['obronca'], level: 'Średni',
   facingUp: 'away',                        // która drużyna gra w górę ekranu: 'away' (domyślnie) albo 'home'
   entities: [{ id: 'ty', team: 'home', number: 4, x: 40, y: 30, you: true }, ...], // team: home | homeGK | away | awayGK
   ball: { on: 'a' },                       // piłka u zawodnika albo { x, y }
   stages: [{
     title, question, lesson,               // lesson = zasada pokazywana po dobrej decyzji i w podsumowaniu
+    fundament: 'asekuracja',               // id z src/taxonomy.js — czego uczy ta decyzja
     intro: KLIP,                           // animacja przed pytaniem
     options: [                             // dokładnie 4, dokładnie jedna correct: true
       { id, label, correct, quality, outcome, feedback, clip: KLIP, highlights: [...] }, // quality: 0 zła (domyślnie), 1 słaba, 2 dobra

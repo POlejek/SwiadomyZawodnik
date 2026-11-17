@@ -3,6 +3,7 @@ import { endState, initialState, stateAt } from '../engine/animation'
 import { VIEW } from '../engine/pitch'
 import { mirrorScenario } from '../engine/variants'
 import { SCENARIOS } from '.'
+import { checkTaxonomy } from '../taxonomy'
 import { validateScenario } from './validate'
 
 // Every way a scenario can be played: each combination of stage variants, on both sides of the pitch.
@@ -21,6 +22,10 @@ describe.each(SCENARIOS.map((s) => [s.id, s]))('scenario %s', (_id, scenario) =>
   it('has no authoring mistakes, also mirrored', () => {
     expect(validateScenario(scenario)).toEqual([])
     expect(validateScenario(mirrorScenario(scenario))).toEqual([])
+  })
+
+  it('is categorised: phase, zone, numbers, positions, level and a fundamental for every stage', () => {
+    expect(checkTaxonomy(scenario)).toEqual([])
   })
 
   describe.each(allRuns(scenario).map((r) => [r.run, r]))('%s', (_run, sc) => {
