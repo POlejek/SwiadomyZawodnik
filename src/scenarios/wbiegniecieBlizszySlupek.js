@@ -6,6 +6,7 @@ export const wbiegniecieBlizszySlupek = {
   title: 'Wbiegnięcie w pole karne',
   subtitle: 'Skrzydłowy przy linii końcowej, ty jesteś napastnikiem',
   category: 'Wykończenie',
+  positions: ['napastnik'],
   level: 'Średni',
   facingUp: 'home',
   brief:

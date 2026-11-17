@@ -84,6 +84,21 @@ function enterStage(base, stageIndex, introStart) {
   }
 }
 
+/** World at the start of stage k when every earlier stage was played well (for practising one stage on its own). */
+export function stageStartState(scenario, k) {
+  let s = initialState(scenario)
+  for (const st of scenario.stages.slice(0, k)) {
+    s = endState(st.intro, s, scenario.entities, scenario.facingUp)
+    s = endState(correctOption(st).clip, s, scenario.entities, scenario.facingUp)
+  }
+  return s
+}
+
+/** One stage of a scenario as its own short game. */
+export function singleStage(scenario, k) {
+  return { ...scenario, stages: [scenario.stages[k]], startState: stageStartState(scenario, k), single: true }
+}
+
 export function startGame(scenario, runId = 0) {
   const base = {
     scenario,
@@ -93,7 +108,7 @@ export function startGame(scenario, runId = 0) {
     results: [],
     playId: 0,
   }
-  return enterStage(base, 0, initialState(scenario))
+  return enterStage(base, 0, scenario.startState ?? initialState(scenario))
 }
 
 /** Points for a first attempt: by the grade, and with a clock up to POINTS_SPEED_MAX extra for a fast decision. */

@@ -16,6 +16,18 @@ export const SCENARIOS = [
   kontrpressing,
 ]
 
+// Every stage of every situation — the pool for the daily training and the medals for principles.
+export const CATALOG = SCENARIOS.flatMap((sc) =>
+  sc.stages.map((st, stageIndex) => ({
+    key: `${sc.id}/${st.id}`,
+    scenarioId: sc.id,
+    stageIndex,
+    title: st.title,
+    scenarioTitle: sc.title,
+    lesson: st.lesson,
+  })),
+)
+
 export function findScenario(id) {
   return SCENARIOS.find((s) => s.id === id)
 }

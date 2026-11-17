@@ -10,6 +10,7 @@ export const pojedynekPrzyLinii = {
   title: 'Pojedynek 1 na 1 przy linii',
   subtitle: 'Skrzydłowy rywala dostaje piłkę, ty jesteś bocznym obrońcą',
   category: 'Obrona',
+  positions: ['obronca'],
   level: 'Średni',
   brief:
     'Rywal przenosi grę na skrzydło. Jesteś bocznym obrońcą i to ty zostajesz w pojedynku ze skrzydłowym. Napastnik czeka w polu karnym na dośrodkowanie.',

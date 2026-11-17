@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { endState, eventsAt, stateAt } from '../engine/animation'
-import { GRADES, choiceResult, currentStage, gameReducer, maxScore, quality, startGame, stars } from '../engine/game'
+import { GRADES, choiceResult, currentStage, gameReducer, maxScore, quality, singleStage, startGame, stars } from '../engine/game'
 import { prepareRun } from '../engine/variants'
+import { MoveIcon, iconFor } from '../icons'
+import { personalise, pitchName, shirtOf } from '../profile'
 import { buzz, canSpeak, playSound, speak, stopSpeaking } from '../sound'
 import { load, save } from '../storage'
 import Pitch from './Pitch'
@@ -20,14 +22,35 @@ function shuffle(list) {
 
 const toneOf = (grade) => GRADES[grade]?.tone ?? 'bad'
 
-export default function GameScreen({ scenario: baseScenario, decisionSeconds, onExit }) {
+/**
+ * One situation. With `single` ({ stageIndex }) it plays just that stage (daily training) and calls onSingleDone.
+ * Callbacks report progress: onDecision (first attempt of a stage), onWhatIfAll, onComplete (whole situation).
+ */
+export default function GameScreen({
+  scenario: baseScenario,
+  decisionSeconds,
+  onExit,
+  profile,
+  single,
+  sessionLabel,
+  onDecision,
+  onWhatIfAll,
+  onComplete,
+  onSingleDone,
+}) {
   const timerOn = decisionSeconds > 0
   // Every run is a fresh version: random cue variants and, half of the time, the mirrored side of the pitch.
-  const [state, dispatch] = useReducer(gameReducer, baseScenario, (s) => startGame(prepareRun(s)))
-  const restart = () => dispatch({ type: 'START', scenario: prepareRun(baseScenario) })
+  const prepare = () => {
+    const run = prepareRun(baseScenario)
+    return single ? singleStage(run, single.stageIndex) : run
+  }
+  const [state, dispatch] = useReducer(gameReducer, null, () => startGame(prepare()))
+  const restart = () => dispatch({ type: 'START', scenario: prepare() })
   const { scenario } = state
   const stage = currentStage(state)
-  const entities = scenario.entities
+  const entities = useMemo(() => personalise(scenario.entities, profile), [scenario.entities, profile])
+  const shirt = shirtOf(profile)
+  const youLabel = pitchName(profile)
   const result = choiceResult(stage, state.choice)
 
   // Which clip is playing, and from which world state it starts.
@@ -130,24 +153,41 @@ export default function GameScreen({ scenario: baseScenario, decisionSeconds, on
     return () => window.removeEventListener('keydown', onKey)
   })
 
-  // Remember the best score.
+  // Progress: every first attempt, watching all the other outcomes, finishing the situation.
+  const reported = useRef(0)
+  useEffect(() => {
+    if (state.results.length < reported.current) reported.current = 0 // new run
+    for (const r of state.results.slice(reported.current)) onDecision?.({ ...r, scenarioId: baseScenario.id })
+    reported.current = state.results.length
+  }, [state.results, baseScenario.id, onDecision])
+  useEffect(() => {
+    if (state.solved && state.explored.length === stage.options.length - 1) onWhatIfAll?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.explored.length])
   useEffect(() => {
     if (state.phase !== 'summary') return
+    if (single) {
+      onSingleDone?.(state)
+      return
+    }
     const best = load(`best:${scenario.id}`, 0)
     if (state.score > best) save(`best:${scenario.id}`, state.score)
-  }, [state.phase, state.score, scenario.id])
+    onComplete?.(baseScenario.id, state.score, stars(state))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.phase, state.runId])
 
   if (state.phase === 'summary') {
+    if (single) return null
     return <Summary state={state} onRestart={restart} onExit={onExit} />
   }
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pb-8">
-      <TopBar scenario={scenario} state={state} onExit={onExit} />
+      <TopBar scenario={scenario} state={state} onExit={onExit} sessionLabel={sessionLabel} />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start">
         <div className="pitch-frame">
-          <Pitch entities={entities} world={world} highlights={highlights} captions={captions} />
-          <Legend entities={entities} />
+          <Pitch entities={entities} world={world} highlights={highlights} captions={captions} homeShirt={shirt} youLabel={youLabel} />
+          <Legend entities={entities} shirt={shirt} youLabel={youLabel} />
         </div>
         <section className="panel" aria-label="Decyzja">
           {state.phase === 'intro' && <Watching onSkip={skip} stage={stage} />}
@@ -162,6 +202,7 @@ export default function GameScreen({ scenario: baseScenario, decisionSeconds, on
               state={state}
               result={result}
               last={state.stageIndex === scenario.stages.length - 1}
+              single={!!single}
               dispatch={dispatch}
             />
           )}
@@ -176,14 +217,14 @@ function stepClass(r) {
   return { good: 'step-good', mid: 'step-mid', bad: 'step-bad' }[toneOf(r.quality)]
 }
 
-function TopBar({ scenario, state, onExit }) {
+function TopBar({ scenario, state, onExit, sessionLabel }) {
   return (
     <header className="flex items-center gap-3 py-4">
       <button type="button" onClick={onExit} className="btn-ghost" aria-label="Wróć do listy sytuacji">
         ←
       </button>
       <div className="min-w-0 flex-1">
-        <p className="eyebrow">{scenario.category}</p>
+        <p className="eyebrow">{sessionLabel ?? scenario.category}</p>
         <h1 className="truncate text-lg font-extrabold leading-tight text-white sm:text-xl">{scenario.title}</h1>
       </div>
       <ol className="flex items-center gap-1.5" aria-label="Etapy">
@@ -199,25 +240,25 @@ function TopBar({ scenario, state, onExit }) {
           )
         })}
       </ol>
-      <div className="score" aria-label={`Punkty: ${state.score}`}>
+      {!scenario.single && <div className="score" aria-label={`Punkty: ${state.score}`}>
         <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">pkt</span>
         <span className="tabular-nums">{state.score}</span>
-      </div>
+      </div>}
     </header>
   )
 }
 
-function Legend({ entities }) {
+function Legend({ entities, shirt, youLabel }) {
   const you = entities.find((e) => e.you)
   const has = (team) => entities.some((e) => e.team === team && !e.you)
   return (
     <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-xs text-slate-400">
       <span className="flex items-center gap-1.5">
-        <i className="dot bg-blue-600 ring-2 ring-yellow-300" /> Ty (nr {you.number})
+        <i className="dot ring-2 ring-yellow-300" style={{ background: shirt.fill }} /> {youLabel === 'TY' ? 'Ty' : youLabel} (nr {you.number})
       </span>
       {has('home') && (
         <span className="flex items-center gap-1.5">
-          <i className="dot bg-blue-600" /> Twoja drużyna
+          <i className="dot" style={{ background: shirt.fill }} /> Twoja drużyna
         </span>
       )}
       <span className="flex items-center gap-1.5">
@@ -282,7 +323,8 @@ function Question({ stage, options, onChoose, seconds, elapsed }) {
         {options.map((o, i) => (
           <button key={o.id} type="button" className="answer" onClick={() => onChoose(o.id)}>
             <span className="answer-key">{LETTERS[i]}</span>
-            <span>{o.label}</span>
+            <span className="flex-1">{o.label}</span>
+            {iconFor(o) && <MoveIcon name={iconFor(o)} className="h-6 w-6 shrink-0 text-slate-400" />}
           </button>
         ))}
       </div>
@@ -318,7 +360,7 @@ const TONE_CLASSES = {
   bad: { badge: 'badge-bad', title: 'text-red-300', icon: '✗' },
 }
 
-function Feedback({ stage, state, result, last, dispatch }) {
+function Feedback({ stage, state, result, last, single, dispatch }) {
   const { choice, solved } = state
   const primary = useRef(null)
   useEffect(() => primary.current?.focus(), [])
@@ -361,7 +403,7 @@ function Feedback({ stage, state, result, last, dispatch }) {
           </button>
         ) : solved ? (
           <button ref={primary} type="button" className="btn-primary" onClick={() => dispatch({ type: 'NEXT' })}>
-            {last ? 'Podsumowanie' : 'Dalej'} →
+            {last && !single ? 'Podsumowanie' : 'Dalej'} →
           </button>
         ) : (
           <button ref={primary} type="button" className="btn-primary" onClick={() => dispatch({ type: 'RETRY' })}>

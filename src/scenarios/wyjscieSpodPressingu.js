@@ -9,6 +9,7 @@ export const wyjscieSpodPressingu = {
   title: 'Wyjście spod pressingu',
   subtitle: 'Bramkarz podaje do ciebie, napastnik rywala doskakuje',
   category: 'Budowanie gry',
+  positions: ['obronca'],
   level: 'Średni',
   brief:
     'Wyprowadzacie piłkę od bramkarza. Jesteś lewym środkowym obrońcą. Napastnik rywala pressuje od środka, a ich skrzydłowy czeka, dokąd zagrasz.',

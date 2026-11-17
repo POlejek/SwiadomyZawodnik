@@ -37,6 +37,25 @@ Grupa docelowa: U11–U16.
   Dźwięki są generowane w przeglądarce, bez plików. Można je wyłączyć.
 - **Czytanie na głos:** przycisk 🔊 czyta pytanie i odpowiedzi (głos systemu, po polsku), co pomaga młodszym zawodnikom.
 
+## Motywacja i postęp (bez kont — zapis w przeglądarce)
+
+- **Profil zawodnika:** imię (wyświetlane nad zawodnikiem zamiast „TY”), numer na koszulce, pozycja, kolor koszulki,
+  grupa wiekowa. Sytuacje dla twojej pozycji są na początku listy, z etykietą „Twoja pozycja”.
+- **Trening dnia:** 5 decyzji w ok. 3 minuty, każda jako osobny etap. Kolejność wyboru: najpierw powtórki, które są na dziś,
+  potem nowe etapy, potem reszta losowo. **Tempo meczu:** każda najlepsza decyzja skraca czas o 3 s (minimum 8 s),
+  a inna przywraca czas wyjściowy.
+- **Powtórki rozłożone w czasie (system Leitnera):** zła decyzja wraca jutro, a najlepsza po 3, 7, 14 i 30 dniach.
+- **Seria dni:** jeden dzień przerwy jej nie przerywa.
+- **Medale za zasady** (każdy etap uczy jednej zasady): brąz za 1, srebro za 3, złoto za 5 najlepszych decyzji.
+- **Odznaki:** Pierwszy krok, Analityk, Błyskawica, Trening dnia, Seria 3 i 7 dni, Komplet, Złoty zawodnik.
+- **XP i poziomy:** Debiutant → Talent → Zawodnik ligowy → Kapitan → Reprezentant.
+- **Ikony przy odpowiedziach** (podanie, strzał, drybling, doskok, cofnięcie…): mniej czytania dla młodszych.
+- **Zestaw od trenera:** trener wybiera sytuacje i wysyła link (np. `…/#zestaw=atak-2v1,kontrpressing&tytul=Tydzień 12`).
+  Zawodnik widzi zestaw na ekranie startowym, a po rozegraniu wysyła wynik przyciskiem (udostępnianie albo schowek).
+  Nie wymaga to kont ani bazy danych.
+
+Postęp jest zapisany w pamięci przeglądarki na danym urządzeniu. Konta i synchronizacja zostaną dodane później.
+
 ## Jak gra działa
 
 - **Obserwuj → Zdecyduj → Zobacz skutek.** Po każdej odpowiedzi: animacja skutku, wyjaśnienie trenerskie i rysunek
@@ -135,4 +154,5 @@ czy strzał, który nie trafia do bramki.
 - Więcej sytuacji: 3 na 2 w ataku, obrona przy dośrodkowaniu, stałe fragmenty gry, gra bramkarza.
 - Rozgałęzienia: zła (ale nie katastrofalna) decyzja prowadzi do innego, trudniejszego etapu zamiast końca akcji.
 - Widok z perspektywy zawodnika (kamera za plecami „TY”), poziomy trudności z krótszym czasem.
-- Profile zawodników i postępy dla trenera; instalacja jako aplikacja na telefon (PWA).
+- Konta i baza danych: postępy na wielu urządzeniach, panel trenera z wynikami całej drużyny.
+- Instalacja jako aplikacja na telefon (PWA).

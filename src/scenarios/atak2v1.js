@@ -7,6 +7,7 @@ export const atak2v1 = {
   title: 'Atak 2 na 1',
   subtitle: 'Kontra: prowadzisz piłkę środkiem, kolega biegnie z lewej',
   category: 'Atak',
+  positions: ['pomocnik', 'napastnik'],
   level: 'Łatwy',
   facingUp: 'home',
   brief:
