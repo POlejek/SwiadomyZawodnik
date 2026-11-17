@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
+import { maxScore } from './engine/game'
 import { readSetFromHash } from './components/CoachPanel'
 import { CATALOG, SCENARIOS } from './scenarios'
 import { obrona2v1Skrzydlo as sc } from './scenarios/obrona2v1Skrzydlo'
@@ -10,6 +11,11 @@ const skip = (user) => user.click(screen.getByRole('button', { name: 'Pomiń ani
 const skipIfIntro = async (user) => {
   const b = screen.queryByRole('button', { name: 'Pomiń animację' })
   if (b) await user.click(b)
+}
+
+async function playScenario(user, title) {
+  const card = screen.getAllByTestId('scenario-card').find((c) => within(c).queryByRole('heading', { name: title }))
+  await user.click(within(card).getByRole('button', { name: 'Graj' }))
 }
 
 async function start(user) {
@@ -29,7 +35,7 @@ describe('App', () => {
   it('plays a whole situation: wrong answer, retry, what-if, then the best decisions to the summary', async () => {
     const user = userEvent.setup()
     await start(user)
-    await user.click(screen.getAllByRole('button', { name: 'Graj' })[0])
+    await playScenario(user, sc.title)
 
     await skip(user)
     expect(screen.getByRole('heading', { name: sc.stages[0].question })).toBeInTheDocument()
@@ -59,7 +65,8 @@ describe('App', () => {
     const summary = screen.getByTestId('summary')
     expect(within(summary).getByText(/Najlepsze decyzje za pierwszym razem/)).toHaveTextContent('2 z 3')
     await user.click(screen.getByRole('button', { name: 'Inne sytuacje' }))
-    expect(screen.getByText(/Rekord:/)).toBeInTheDocument()
+    const card = screen.getAllByTestId('scenario-card').find((c) => within(c).queryByRole('heading', { name: sc.title }))
+    expect(card).toHaveTextContent(`/${maxScore(sc)}`)
   })
 
   it('first visit: the profile puts the name and number on the pitch', async () => {
@@ -71,7 +78,7 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: 'Gramy!' }))
     expect(screen.getByRole('button', { name: /Edytuj profil/ })).toHaveTextContent('Kuba')
     expect(screen.getAllByText('Twoja pozycja').length).toBeGreaterThan(0)
-    await user.click(screen.getAllByRole('button', { name: 'Graj' })[0])
+    await playScenario(user, sc.title)
     expect(screen.getAllByText('KUBA').length).toBeGreaterThan(0)
   })
 
@@ -93,10 +100,25 @@ describe('App', () => {
     expect(screen.getByText('Zrobione na dziś ✓')).toBeInTheDocument()
   })
 
+  it('library: tabs and filters narrow the list', async () => {
+    const user = userEvent.setup()
+    await start(user)
+    const all = screen.getAllByTestId('scenario-card').length
+    expect(all).toBe(SCENARIOS.length)
+    await user.click(screen.getByRole('tab', { name: /^Obrona/ }))
+    expect(screen.getAllByTestId('scenario-card').length).toBe(SCENARIOS.filter((s) => s.faza === 'obrona').length)
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Fundament' }), 'opoznianie')
+    expect(screen.getAllByTestId('scenario-card')).toHaveLength(1)
+    await user.click(screen.getByRole('button', { name: 'Wyczyść filtry' }))
+    await user.click(screen.getByRole('tab', { name: /^Wszystkie/ }))
+    await user.type(screen.getByRole('searchbox', { name: 'Szukaj sytuacji' }), 'kontrpressing')
+    expect(screen.getAllByTestId('scenario-card')).toHaveLength(1)
+  })
+
   it('answers with the keyboard', async () => {
     const user = userEvent.setup()
     await start(user)
-    await user.click(screen.getAllByRole('button', { name: 'Graj' })[0])
+    await playScenario(user, sc.title)
     await skip(user)
     await user.keyboard('1')
     expect(screen.getByRole('button', { name: 'Pomiń animację' })).toBeInTheDocument()

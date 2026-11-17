@@ -5,7 +5,9 @@ export const wbiegniecieBlizszySlupek = {
   id: 'wbiegniecie-blizszy-slupek',
   title: 'Wbiegnięcie w pole karne',
   subtitle: 'Skrzydłowy przy linii końcowej, ty jesteś napastnikiem',
-  category: 'Wykończenie',
+  faza: 'atak',
+  strefa: 'tercja-ataku',
+  liczebnosc: '1v2',
   positions: ['napastnik'],
   level: 'Średni',
   facingUp: 'home',
@@ -26,6 +28,7 @@ export const wbiegniecieBlizszySlupek = {
   stages: [
     {
       id: 'gdzie-wbiec',
+      fundament: 'gra-bez-pilki',
       title: 'Gdzie wbiec?',
       question: 'Skrzydłowy jest przy linii końcowej i zaraz zagra płasko i mocno przed bramkę. Obrońca stoi przed tobą. Gdzie biegniesz?',
       lesson:
@@ -149,6 +152,7 @@ export const wbiegniecieBlizszySlupek = {
 
     {
       id: 'wykonczenie',
+      fundament: 'wykonczenie',
       title: 'Wykończenie',
       question: 'Piłka dociera do ciebie przy bliższym słupku. Bramkarz zasłania bliższy róg, obrońca jest tuż za tobą. Co robisz?',
       lesson:

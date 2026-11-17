@@ -6,7 +6,9 @@ export const atak2v1 = {
   id: 'atak-2v1',
   title: 'Atak 2 na 1',
   subtitle: 'Kontra: prowadzisz piłkę środkiem, kolega biegnie z lewej',
-  category: 'Atak',
+  faza: 'przejscie-atak',
+  strefa: 'tercja-ataku',
+  liczebnosc: '2v1',
   positions: ['pomocnik', 'napastnik'],
   level: 'Łatwy',
   facingUp: 'home',
@@ -25,6 +27,7 @@ export const atak2v1 = {
   stages: [
     {
       id: 'zaangazuj',
+      fundament: 'przewaga',
       title: 'Kontra 2 na 1',
       question: 'Masz piłkę, kolega biegnie lewą stroną, przed wami jest jeden obrońca. Co robisz?',
       lesson:
@@ -162,6 +165,7 @@ export const atak2v1 = {
 
     {
       id: 'moment-podania',
+      fundament: 'przewaga',
       title: 'Moment podania',
       question: 'Zbliżasz się do pola karnego, kolega biegnie lewą stroną. Patrz na obrońcę! Co robisz?',
       lesson:

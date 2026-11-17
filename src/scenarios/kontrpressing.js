@@ -7,7 +7,9 @@ export const kontrpressing = {
   id: 'kontrpressing',
   title: 'Kontrpressing po stracie',
   subtitle: 'Rywal przejmuje piłkę — doskoczyć czy wrócić?',
-  category: 'Przejście do obrony',
+  faza: 'przejscie-obrona',
+  strefa: 'tercja-srodkowa',
+  liczebnosc: '2v1',
   positions: ['pomocnik'],
   level: 'Trudny',
   brief:
@@ -29,6 +31,7 @@ export const kontrpressing = {
   stages: [
     {
       id: 'reakcja',
+      fundament: 'kontrpressing',
       title: 'Pierwsza reakcja',
       question: 'Straciliście piłkę w środku boiska. Patrz, gdzie jest rywal z piłką! Co robisz?',
       lesson:
@@ -285,6 +288,7 @@ export const kontrpressing = {
 
     {
       id: 'osaczony',
+      fundament: 'kontrpressing',
       title: 'Rywal w pułapce',
       question: 'Rywal jest osaczony przez ciebie i kolegę i szuka wolnego partnera. Co dalej?',
       lesson:

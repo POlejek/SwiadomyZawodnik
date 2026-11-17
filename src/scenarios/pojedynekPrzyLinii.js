@@ -9,7 +9,9 @@ export const pojedynekPrzyLinii = {
   id: 'pojedynek-przy-linii',
   title: 'Pojedynek 1 na 1 przy linii',
   subtitle: 'Skrzydłowy rywala dostaje piłkę, ty jesteś bocznym obrońcą',
-  category: 'Obrona',
+  faza: 'obrona',
+  strefa: 'tercja-obronna',
+  liczebnosc: '1v1',
   positions: ['obronca'],
   level: 'Średni',
   brief:
@@ -28,6 +30,7 @@ export const pojedynekPrzyLinii = {
   stages: [
     {
       id: 'dystans',
+      fundament: 'dystans',
       title: 'Piłka w powietrzu',
       question: 'Rywal podaje do skrzydłowego przy linii. Piłka jeszcze leci, a ty stoisz 10 metrów od niego. Co robisz?',
       lesson:
@@ -157,6 +160,7 @@ export const pojedynekPrzyLinii = {
 
     {
       id: 'wypuszczona-pilka',
+      fundament: 'odbior',
       title: 'Wyścig wzdłuż linii',
       question: 'Skrzydłowy wypuścił piłkę obok ciebie wzdłuż linii i chce cię przegonić. Co robisz?',
       lesson:

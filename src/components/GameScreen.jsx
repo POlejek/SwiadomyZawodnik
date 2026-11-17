@@ -5,6 +5,7 @@ import { prepareRun } from '../engine/variants'
 import { MoveIcon, iconFor } from '../icons'
 import { personalise, pitchName, shirtOf } from '../profile'
 import { buzz, canSpeak, playSound, speak, stopSpeaking } from '../sound'
+import { faza, fundament } from '../taxonomy'
 import { load, save } from '../storage'
 import Pitch from './Pitch'
 import { useClipPlayer } from './useClipPlayer'
@@ -218,13 +219,14 @@ function stepClass(r) {
 }
 
 function TopBar({ scenario, state, onExit, sessionLabel }) {
+  const stage = currentStage(state)
   return (
     <header className="flex items-center gap-3 py-4">
       <button type="button" onClick={onExit} className="btn-ghost" aria-label="Wróć do listy sytuacji">
         ←
       </button>
       <div className="min-w-0 flex-1">
-        <p className="eyebrow">{sessionLabel ?? scenario.category}</p>
+        <p className="eyebrow">{sessionLabel ?? `${faza(scenario.faza)?.label} · ${fundament(stage.fundament)?.label}`}</p>
         <h1 className="truncate text-lg font-extrabold leading-tight text-white sm:text-xl">{scenario.title}</h1>
       </div>
       <ol className="flex items-center gap-1.5" aria-label="Etapy">

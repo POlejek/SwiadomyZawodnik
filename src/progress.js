@@ -1,4 +1,4 @@
-// Player progress kept in this browser (no accounts yet): spaced repetition, daily streak,
+// Player progress kept in this browser (no accounts yet): spaced repetition, a weekly goal,
 // medals for each principle, badges, XP and level. Pure functions take `today` (YYYY-MM-DD) so they are testable.
 import { load, save } from './storage'
 
@@ -6,6 +6,9 @@ import { load, save } from './storage'
 export const INTERVALS = [1, 3, 7, 14, 30]
 export const DAILY_SIZE = 5
 export const DAILY_XP = 50
+// Weekly goal instead of a daily streak: nothing is ever lost, every Monday starts fresh,
+// and it fits a young player's week (club training, matches, school).
+export const WEEKLY_GOAL = 3
 
 export const LEVELS = [
   { xp: 0, name: 'Debiutant' },
@@ -26,8 +29,8 @@ export const BADGES = {
   analityk: { icon: '🔍', name: 'Analityk', text: 'Obejrzałeś skutki wszystkich odpowiedzi w jednej sytuacji.' },
   blyskawica: { icon: '⚡', name: 'Błyskawica', text: 'Najlepsza decyzja w mniej niż 5 sekund.' },
   'trening-dnia': { icon: '📅', name: 'Trening dnia', text: 'Pierwszy ukończony trening dnia.' },
-  'seria-3': { icon: '🔥', name: 'Seria 3 dni', text: 'Trening dnia 3 razy z rzędu.' },
-  'seria-7': { icon: '🏆', name: 'Seria 7 dni', text: 'Trening dnia 7 razy z rzędu.' },
+  'pelny-tydzien': { icon: '✅', name: 'Pełny tydzień', text: `Cel tygodnia: ${WEEKLY_GOAL} treningi dnia w jednym tygodniu.` },
+  'cztery-tygodnie': { icon: '🏆', name: '4 pełne tygodnie', text: 'Cel tygodnia osiągnięty w 4 tygodniach (nie muszą być pod rząd).' },
   komplet: { icon: '🧩', name: 'Komplet', text: 'Każda sytuacja rozegrana do końca.' },
   'zloty-zawodnik': { icon: '🥇', name: 'Złoty zawodnik', text: 'Złoty medal za 5 zasad.' },
 }
@@ -96,25 +99,34 @@ export function recordScenarioComplete(progress, scenarioId, allScenarioIds, tod
   return { progress: p, earned }
 }
 
-/** Training days in a row; one missed day in between does not break the streak. */
-export function streak(progress, today) {
-  const days = [...new Set(progress.trainingDays)].sort()
-  if (!days.length || daysBetween(days[days.length - 1], today) > 2) return 0
-  let n = 1
-  for (let i = days.length - 1; i > 0; i--) {
-    if (daysBetween(days[i - 1], days[i]) > 2) break
-    n++
-  }
-  return n
+/** Monday of the week containing `iso`. */
+export function weekStart(iso) {
+  const [y, m, d] = iso.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  const shift = (date.getDay() + 6) % 7 // Monday = 0
+  return addDays(iso, -shift)
+}
+
+/** Daily trainings done in the current week (Monday–Sunday) — counts up, never down. */
+export function weekProgress(progress, today) {
+  const start = weekStart(today)
+  const done = new Set(progress.trainingDays.filter((d) => d >= start && d <= today)).size
+  return { done, goal: WEEKLY_GOAL, reached: done >= WEEKLY_GOAL }
+}
+
+/** Weeks in which the goal was reached (any weeks, not necessarily in a row). */
+export function fullWeeks(progress) {
+  const perWeek = {}
+  for (const d of new Set(progress.trainingDays)) perWeek[weekStart(d)] = (perWeek[weekStart(d)] ?? 0) + 1
+  return Object.values(perWeek).filter((n) => n >= WEEKLY_GOAL).length
 }
 
 export function recordTraining(progress, today) {
   let p = { ...progress, xp: progress.xp + DAILY_XP, trainingDays: [...new Set([...progress.trainingDays, today])] }
   const earned = []
   p = grant(p, 'trening-dnia', today, earned)
-  const s = streak(p, today)
-  if (s >= 3) p = grant(p, 'seria-3', today, earned)
-  if (s >= 7) p = grant(p, 'seria-7', today, earned)
+  if (weekProgress(p, today).reached) p = grant(p, 'pelny-tydzien', today, earned)
+  if (fullWeeks(p) >= 4) p = grant(p, 'cztery-tygodnie', today, earned)
   return { progress: p, earned }
 }
 
