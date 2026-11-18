@@ -28,7 +28,7 @@ export const wbiegniecieBlizszySlupek = {
   stages: [
     {
       id: 'gdzie-wbiec',
-      fundament: 'gra-bez-pilki',
+      fundament: 'atakowanie-przestrzeni',
       title: 'Gdzie wbiec?',
       question: 'Skrzydłowy jest przy linii końcowej i zaraz zagra płasko i mocno przed bramkę. Obrońca stoi przed tobą. Gdzie biegniesz?',
       lesson:
@@ -152,7 +152,7 @@ export const wbiegniecieBlizszySlupek = {
 
     {
       id: 'wykonczenie',
-      fundament: 'wykonczenie',
+      fundament: 'odwaga-cierpliwosc',
       title: 'Wykończenie',
       question: 'Piłka dociera do ciebie przy bliższym słupku. Bramkarz zasłania bliższy róg, obrońca jest tuż za tobą. Co robisz?',
       lesson:

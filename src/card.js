@@ -1,7 +1,7 @@
 // The player's card, FIFA style: six skills and an overall rating up to 99.
 // Built to last for months, not weeks:
 //  - every skill rises fast at first and ever more slowly (an asymptotic curve),
-//  - each skill has a CEILING set by how many fundamentals of its group are mastered (medals),
+//  - each skill has a CEILING set by how many principles (zasady) of its phase are mastered (medals),
 //    so 90+ needs gold medals, and gold needs the best decision on 5 different days,
 //  - every new situation added to the game raises the ceiling again,
 //  - ratings never go down: the card keeps the highest value ever reached.
@@ -15,9 +15,9 @@ const K = 260 // attribute points for ~63% of the way from BASE to the ceiling
 
 export const ATTRS = [
   { key: 'CZY', label: 'Czytanie gry', how: 'Sytuacje z sygnałem: patrz, co robi rywal, zanim zdecydujesz.' },
-  { key: 'ATA', label: 'Atak', how: 'Decyzje z fundamentów ataku.' },
-  { key: 'OBR', label: 'Obrona', how: 'Decyzje z fundamentów obrony.' },
-  { key: 'PRZ', label: 'Przejścia', how: 'Kontrpressing i powrót po stracie, kontry.' },
+  { key: 'ATA', label: 'Atak', how: 'Decyzje z zasad ataku.' },
+  { key: 'OBR', label: 'Obrona', how: 'Decyzje z zasad obrony.' },
+  { key: 'PRZ', label: 'Przejścia', how: 'Decyzje z zasad przejść: atak → obrona (AO) i obrona → atak (OA).' },
   { key: 'SZY', label: 'Szybkość decyzji', how: 'Najlepsze decyzje podjęte szybko, z włączonym czasem.' },
   { key: 'WYT', label: 'Wytrwałość', how: 'Treningi dnia i pełne tygodnie.' },
 ]
@@ -39,7 +39,7 @@ export const TIERS = [
   { min: 0, id: 'brazowa', label: 'Brązowa' },
 ]
 
-const GROUP_ATTR = { 'atak-ind': 'ATA', 'atak-grp': 'ATA', 'obrona-ind': 'OBR', 'obrona-grp': 'OBR', przejscia: 'PRZ' }
+const GROUP_ATTR = { atak: 'ATA', obrona: 'OBR', ao: 'PRZ', oa: 'PRZ' }
 
 /** Which skill a stage trains (plus "reading the game" when the stage has cue variants). */
 export function attrsOfStage(stage) {
@@ -141,7 +141,7 @@ export const CARD_TIERS = [
 ]
 const ORDER = { bronze: 0, silver: 1, gold: 2 }
 
-/** Fundamental cards: the tier is the weakest medal over the decisions that teach it. */
+/** Principle cards: the tier is the weakest medal over the decisions that teach it. */
 export function albumCards(progress, catalog = CATALOG) {
   const byF = {}
   for (const c of catalog) (byF[c.fundament] ??= []).push(c)
@@ -153,7 +153,7 @@ export function albumCards(progress, catalog = CATALOG) {
   })
 }
 
-/** Album completion: three slots per fundamental (bronze, silver, gold) plus one per special card. */
+/** Album completion: three slots per principle with situations (bronze, silver, gold) plus one per special card. */
 export function albumCompletion(progress, specialIds, catalog = CATALOG) {
   const cards = albumCards(progress, catalog)
   const filled = cards.reduce((s, c) => s + (c.tier ? ORDER[c.tier] + 1 : 0), 0) + specialIds.filter((id) => progress.badges[id]).length

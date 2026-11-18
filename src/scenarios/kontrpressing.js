@@ -31,7 +31,7 @@ export const kontrpressing = {
   stages: [
     {
       id: 'reakcja',
-      fundament: 'kontrpressing',
+      fundament: 'reakcja',
       title: 'Pierwsza reakcja',
       question: 'Straciliście piłkę w środku boiska. Patrz, gdzie jest rywal z piłką! Co robisz?',
       lesson:
@@ -288,7 +288,7 @@ export const kontrpressing = {
 
     {
       id: 'osaczony',
-      fundament: 'kontrpressing',
+      fundament: 'razem',
       title: 'Rywal w pułapce',
       question: 'Rywal jest osaczony przez ciebie i kolegę i szuka wolnego partnera. Co dalej?',
       lesson:

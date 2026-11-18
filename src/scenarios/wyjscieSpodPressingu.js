@@ -31,7 +31,7 @@ export const wyjscieSpodPressingu = {
   stages: [
     {
       id: 'przyjecie',
-      fundament: 'przyjecie-kierunkowe',
+      fundament: 'gotowosc-do-gry',
       title: 'Przyjęcie pod presją',
       question: 'Bramkarz podaje do ciebie, a napastnik rywala biegnie na ciebie od środka. Jak przyjmujesz piłkę?',
       lesson:
@@ -157,7 +157,7 @@ export const wyjscieSpodPressingu = {
 
     {
       id: 'podanie-przez-linie',
-      fundament: 'podanie-przez-linie',
+      fundament: 'pierwszenstwo',
       title: 'Pierwsze podanie',
       question: 'Napastnik goni cię z tyłu. Szóstka i boczny obrońca pokazują się do gry. Patrz na skrzydłowego rywala! Co robisz?',
       lesson:

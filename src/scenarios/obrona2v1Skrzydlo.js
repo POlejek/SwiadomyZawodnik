@@ -197,7 +197,7 @@ export const obrona2v1Skrzydlo = {
     // ───────────────────────────── Stage 2: at the edge of the box ─────────────────────────────
     {
       id: 'linia-podania',
-      fundament: 'linia-podania',
+      fundament: 'tarcza',
       title: 'Wejście w pole karne',
       question: 'Zawodnik z piłką wchodzi w pole karne, środkowy czeka na podanie. Kolega wraca, ale jest jeszcze 2 sekundy za akcją. Co teraz?',
       lesson:
@@ -355,7 +355,7 @@ export const obrona2v1Skrzydlo = {
     // ───────────────────────────── Stage 3: rebound after the save ─────────────────────────────
     {
       id: 'dobitka',
-      fundament: 'bezpieczenstwo',
+      fundament: 'kontrola',
       title: 'Odbita piłka',
       question: 'Bramkarz odbił piłkę przed siebie. Leży tuż obok ciebie, a środkowy napastnik biegnie do dobitki. Co robisz?',
       lesson:

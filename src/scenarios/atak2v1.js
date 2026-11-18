@@ -27,7 +27,7 @@ export const atak2v1 = {
   stages: [
     {
       id: 'zaangazuj',
-      fundament: 'przewaga',
+      fundament: 'odwaga-cierpliwosc',
       title: 'Kontra 2 na 1',
       question: 'Masz piłkę, kolega biegnie lewą stroną, przed wami jest jeden obrońca. Co robisz?',
       lesson:
@@ -165,7 +165,7 @@ export const atak2v1 = {
 
     {
       id: 'moment-podania',
-      fundament: 'przewaga',
+      fundament: 'pierwszenstwo',
       title: 'Moment podania',
       question: 'Zbliżasz się do pola karnego, kolega biegnie lewą stroną. Patrz na obrońcę! Co robisz?',
       lesson:

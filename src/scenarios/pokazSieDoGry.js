@@ -32,7 +32,7 @@ export const pokazSieDoGry = {
   stages: [
     {
       id: 'gdzie-sie-pokazac',
-      fundament: 'wsparcie',
+      fundament: 'struktura',
       title: 'Gdzie się pokazać?',
       question: 'Kolega z piłką jest pod presją. Stoisz za plecami pomocnika rywala. Co robisz?',
       lesson:
@@ -149,7 +149,7 @@ export const pokazSieDoGry = {
 
     {
       id: 'gra-do-przodu',
-      fundament: 'orientacja',
+      fundament: 'pierwszenstwo',
       title: 'Przyjęcie bokiem',
       question: 'Dostałeś piłkę, ustawiony bokiem. Pomocnik rywala biegnie do ciebie. Skrzydłowy jest wolny. Co robisz?',
       lesson:

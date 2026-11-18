@@ -3,7 +3,7 @@ import { ATTRS, CARD_TIERS, albumCards, albumCompletion } from '../card'
 import { shirtOf } from '../profile'
 import { BADGES } from '../progress'
 import { findScenario } from '../scenarios'
-import { grupa } from '../taxonomy'
+import { FUNDAMENTY, grupa } from '../taxonomy'
 import PlayerCard, { cardToPng } from './PlayerCard'
 
 const TIER_STYLE = {
@@ -12,7 +12,7 @@ const TIER_STYLE = {
   gold: 'from-yellow-700 via-yellow-300 to-yellow-600 text-yellow-950',
 }
 
-/** "Moja karta": the player's card with skills, and the album of fundamental and special cards. */
+/** "Moja karta": the player's card with skills, and the album of principle and special cards. */
 export default function CardScreen({ card, progress, profile, onExit }) {
   const [tab, setTab] = useState('karta')
   return (
@@ -98,8 +98,8 @@ function CardTab({ card, profile }) {
           })}
         </div>
         <div className="panel mt-6 !p-4 text-sm leading-relaxed text-slate-300">
-          <b className="text-white">Jak podnieść pułap?</b> Pułap umiejętności rośnie z medalami za fundamenty z jej grupy. Złoty medal to najlepsza decyzja w{' '}
-          <b className="text-white">5 różnych dniach</b> — dlatego wracaj do powtórek. Do 99 dojdziesz tylko ze złotem we wszystkich fundamentach, a każda nowa sytuacja daje nowy cel.
+          <b className="text-white">Jak podnieść pułap?</b> Pułap umiejętności rośnie z medalami za zasady gry z jej fazy. Złoty medal to najlepsza decyzja w{' '}
+          <b className="text-white">5 różnych dniach</b> — dlatego wracaj do powtórek. Do 99 dojdziesz tylko ze złotem we wszystkich zasadach, a każda nowa sytuacja daje nowy cel.
         </div>
       </div>
     </div>
@@ -110,6 +110,7 @@ function AlbumTab({ progress }) {
   const cards = albumCards(progress)
   const specials = Object.keys(BADGES)
   const done = albumCompletion(progress, specials)
+  const upcoming = FUNDAMENTY.filter((z) => !cards.some((c) => c.id === z.id))
   return (
     <div className="mt-6" data-testid="album">
       <div className="panel !p-4">
@@ -122,15 +123,30 @@ function AlbumTab({ progress }) {
         <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-slate-800">
           <div className="h-full rounded-full bg-gradient-to-r from-amber-600 via-slate-200 to-yellow-300" style={{ width: `${done.share * 100}%` }} />
         </div>
-        <p className="mt-2 text-xs text-slate-400">Każdy fundament ma trzy karty: brązową, srebrną i złotą. Karty zdobywasz za decyzje — bez losowania.</p>
+        <p className="mt-2 text-xs text-slate-400">Każda zasada gry ma trzy karty: brązową, srebrną i złotą. Karty zdobywasz za decyzje — bez losowania.</p>
       </div>
 
-      <h2 className="mb-3 mt-8 text-lg font-extrabold text-white">Fundamenty gry</h2>
+      <h2 className="mb-3 mt-8 text-lg font-extrabold text-white">Zasady gry</h2>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {cards.map((c) => (
           <FundamentCard key={c.id} c={c} />
         ))}
       </div>
+
+      {upcoming.length > 0 && (
+        <>
+          <h2 className="mb-1 mt-8 text-lg font-extrabold text-white">Wkrótce w albumie</h2>
+          <p className="mb-3 text-sm text-slate-400">Zasady gry, dla których przygotowujemy sytuacje. Każda doda trzy nowe karty.</p>
+          <div className="flex flex-wrap gap-2">
+            {upcoming.map((z) => (
+              <span key={z.id} className="tag">
+                {grupa(z.grupa)?.label} {z.nr}. {z.label}
+                {z.odWieku ? ` (od ${z.odWieku})` : ''}
+              </span>
+            ))}
+          </div>
+        </>
+      )}
 
       <h2 className="mb-3 mt-8 text-lg font-extrabold text-white">Karty specjalne</h2>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -158,7 +174,9 @@ function FundamentCard({ c }) {
   const sc = nextItem && findScenario(nextItem.scenarioId)
   return (
     <div className={`album-card ${c.tier ? `bg-gradient-to-br ${TIER_STYLE[c.tier]}` : 'album-locked'}`} data-testid="album-card">
-      <p className={`text-[10px] font-bold uppercase tracking-wider ${c.tier ? 'opacity-70' : 'text-slate-500'}`}>{grupa(c.fundament.grupa)?.label}</p>
+      <p className={`text-[10px] font-bold uppercase tracking-wider ${c.tier ? 'opacity-70' : 'text-slate-500'}`}>
+        {grupa(c.fundament.grupa)?.label} · {c.fundament.nr}
+      </p>
       <p className="mt-1 text-base font-black leading-tight">{c.fundament.label}</p>
       <div className="mt-2 flex gap-1" aria-label={c.tier ? `Karta: ${CARD_TIERS[tierIndex].label}` : 'Karta do zdobycia'}>
         {CARD_TIERS.map((t, i) => (
@@ -170,7 +188,7 @@ function FundamentCard({ c }) {
           ? 'Komplet — złota karta!'
           : sc
             ? `Następna: najlepsza decyzja w „${nextItem.title}” (${sc.title}) w kolejnym dniu.`
-            : c.fundament.opis}
+            : c.fundament.sygnal ?? ''}
       </p>
     </div>
   )
