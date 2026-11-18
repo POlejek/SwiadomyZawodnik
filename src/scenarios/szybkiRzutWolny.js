@@ -114,7 +114,6 @@ export const szybkiRzutWolny = {
               d1: [{ t: 2.3, x: 31, y: 11 }],
               d2: [{ t: 2.3, x: 39.5, y: 10 }],
               gk: [{ t: 2.0, x: 35, y: 4 }, { t: 2.6, x: 33.5, y: 2.5, pose: 'down' }],
-              m1: [{ t: 2.5, x: 43, y: 35 }],
             },
             ball: [
               { t: 0.3, on: 'ty' },
