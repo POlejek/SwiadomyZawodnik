@@ -115,6 +115,16 @@ describe('App', () => {
     expect(screen.getAllByTestId('scenario-card')).toHaveLength(1)
   })
 
+  it('card and album: the card starts at 40 and opens with the album', async () => {
+    const user = userEvent.setup()
+    await start(user)
+    await user.click(screen.getAllByRole('button', { name: /Karta i album/ })[0])
+    expect(screen.getByRole('img', { name: /Karta zawodnika: ocena 40, Brązowa/ })).toBeInTheDocument()
+    expect(screen.getByText('Oceny nigdy nie spadają.')).toBeInTheDocument()
+    await user.click(screen.getByRole('tab', { name: 'Album' }))
+    expect(screen.getAllByTestId('album-card').length).toBeGreaterThan(5)
+  })
+
   it('answers with the keyboard', async () => {
     const user = userEvent.setup()
     await start(user)

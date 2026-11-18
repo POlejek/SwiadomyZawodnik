@@ -158,9 +158,9 @@ export default function GameScreen({
   const reported = useRef(0)
   useEffect(() => {
     if (state.results.length < reported.current) reported.current = 0 // new run
-    for (const r of state.results.slice(reported.current)) onDecision?.({ ...r, scenarioId: baseScenario.id })
+    for (const r of state.results.slice(reported.current)) onDecision?.({ ...r, scenarioId: baseScenario.id, seconds: decisionSeconds })
     reported.current = state.results.length
-  }, [state.results, baseScenario.id, onDecision])
+  }, [state.results, baseScenario.id, onDecision, decisionSeconds])
   useEffect(() => {
     if (state.solved && state.explored.length === stage.options.length - 1) onWhatIfAll?.()
     // eslint-disable-next-line react-hooks/exhaustive-deps

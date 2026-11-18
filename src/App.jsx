@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { CARD_TIERS, albumCards, albumSnapshot, computeCard, pointsFor, withCardBest } from './card'
+import CardScreen from './components/CardScreen'
 import CoachPanel, { readSetFromHash, shareText } from './components/CoachPanel'
 import GameScreen from './components/GameScreen'
 import Home from './components/Home'
@@ -54,24 +56,54 @@ export default function App() {
     save('settings', next)
   }
 
-  // Every progress change goes through here: saved at once, new badges shown as toasts.
-  const updateProgress = useCallback((fn) => {
-    const { progress: next, earned } = fn(progressRef.current)
-    progressRef.current = next
-    saveProgress(next)
-    setProgress(next)
-    if (earned.length) {
-      playSound('good')
-      const items = earned.map((badge) => ({ id: `${badge}-${Date.now()}`, badge }))
-      setToasts((cur) => [...cur, ...items])
-      setTimeout(() => setToasts((cur) => cur.filter((t) => !items.includes(t))), 3800)
-    }
+  const profileRef = useRef(profile)
+  profileRef.current = profile
+
+  const toast = useCallback((items) => {
+    if (!items.length) return
+    playSound('good')
+    const stamped = items.map((t, i) => ({ ...t, id: `${Date.now()}-${i}-${Math.random()}` }))
+    setToasts((cur) => [...cur, ...stamped])
+    setTimeout(() => setToasts((cur) => cur.filter((t) => !stamped.includes(t))), 4000)
   }, [])
 
+  // Every progress change goes through here: saved at once; new badges, album cards and a higher rating pop up.
+  const updateProgress = useCallback(
+    (fn) => {
+      const before = progressRef.current
+      const today = todayISO()
+      const cardBefore = computeCard(before, SCENARIOS, profileRef.current, today)
+      const albumBefore = albumSnapshot(before)
+      const { progress: changed, earned } = fn(before)
+      const cardAfter = computeCard(changed, SCENARIOS, profileRef.current, today)
+      const next = withCardBest(changed, cardAfter)
+      progressRef.current = next
+      saveProgress(next)
+      setProgress(next)
+
+      const items = earned.map((badge) => ({ badge }))
+      for (const c of albumCards(next)) {
+        if (c.tier && !albumBefore.has(`${c.id}:${c.tier}`)) {
+          items.push({ icon: '🃏', title: 'Nowa karta w albumie', text: `${c.fundament.label} · ${CARD_TIERS.find((t) => t.id === c.tier).label}` })
+        }
+      }
+      if (cardAfter.overall > cardBefore.overall) {
+        items.push({ icon: '⬆️', title: 'Twoja karta', text: `Ocena ${cardBefore.overall} → ${cardAfter.overall}${cardAfter.tier.id !== cardBefore.tier.id ? ` · karta ${cardAfter.tier.label.toLowerCase()}!` : ''}` })
+      }
+      toast(items)
+    },
+    [toast],
+  )
+
   const onDecision = useCallback(
-    (r) => updateProgress((p) => recordDecision(p, { scenarioId: r.scenarioId, stageId: r.stageId, quality: r.quality, timeMs: r.timeMs, points: r.points }, todayISO())),
+    (r) => {
+      const stage = findScenario(r.scenarioId)?.stages.find((s) => s.id === r.stageId)
+      const attrs = stage ? pointsFor({ stage, quality: r.quality, timeMs: r.timeMs, seconds: r.seconds }) : {}
+      updateProgress((p) => recordDecision(p, { scenarioId: r.scenarioId, stageId: r.stageId, quality: r.quality, timeMs: r.timeMs, points: r.points, attrs }, todayISO()))
+    },
     [updateProgress],
   )
+  const card = computeCard(progress, SCENARIOS, profile, todayISO())
   const onWhatIfAll = useCallback(() => updateProgress((p) => recordWhatIfAll(p, todayISO())), [updateProgress])
   const onComplete = useCallback(
     (id, score, stars) => {
@@ -134,6 +166,8 @@ export default function App() {
         onExit={home}
       />
     )
+  } else if (screen.name === 'card') {
+    content = <CardScreen card={card} progress={progress} profile={profile} onExit={home} />
   } else if (screen.name === 'progress') {
     content = <ProgressScreen progress={progress} onExit={home} />
   } else {
@@ -149,6 +183,8 @@ export default function App() {
         onTraining={() => go({ name: 'training', items: pickDaily(progressRef.current, CATALOG, todayISO()) })}
         onEditProfile={() => setEditingProfile(true)}
         onProgress={() => go({ name: 'progress' })}
+        onCard={() => go({ name: 'card' })}
+        card={card}
         onCoach={() => setCoachOpen(true)}
         onShareSet={shareSetResult}
       />

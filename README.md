@@ -56,6 +56,23 @@ Grupa docelowa: U11–U16.
   Dźwięki są generowane w przeglądarce, bez plików. Można je wyłączyć.
 - **Czytanie na głos:** przycisk 🔊 czyta pytanie i odpowiedzi (głos systemu, po polsku), co pomaga młodszym zawodnikom.
 
+## Karta zawodnika i album (długa gra)
+
+- **Twoja karta** w stylu kart piłkarskich ma ogólną ocenę i sześć umiejętności w skali 40–99: Czytanie gry (CZY), Atak (ATA),
+  Obrona (OBR), Przejścia (PRZ), Szybkość decyzji (SZY) i Wytrwałość (WYT). Ocena ogólna to średnia ważona według pozycji.
+  Poziomy karty: brązowa < 65, srebrna 65+, złota 75+, elita 85+. W tygodniu z osiągniętym celem karta ma znaczek „W formie”.
+  Kartę można udostępnić jako obrazek.
+- **Każda decyzja daje punkty umiejętności.** Najlepsza decyzja daje najwięcej, a starania liczą się trochę.
+  Ocena rośnie po krzywej: szybko na początku, potem coraz wolniej (`src/card.js`, stała `K`).
+- **Pułap umiejętności** zależy od medali za fundamenty z jej grupy: bez medali 60, ze złotem we wszystkich 99.
+  Złoto wymaga najlepszej decyzji w **5 różnych dniach**, więc nie da się go wyklikać jednego wieczoru.
+  Każda nowa sytuacja podnosi pułap, czyli daje nowy cel.
+- **Oceny nigdy nie spadają.** Karta zapamiętuje najwyższe wartości.
+- **Album:** każdy fundament ma kartę brązową, srebrną i złotą, do tego są karty specjalne (odznaki). Wszystko zdobywa się
+  za decyzje, **bez losowania i bez paczek**. Puste miejsca mówią, co zrobić, żeby je wypełnić.
+- Symulacja w testach pilnuje tempa: zawodnik grający codziennie bezbłędnie ma po 30 dniach ok. 68,
+  a typowy (3× w tygodniu, 70% trafień) ok. 52 po miesiącu, 70 po 3 miesiącach, 84 po pół roku i 92 po roku.
+
 ## Motywacja i postęp (bez kont — zapis w przeglądarce)
 
 - **Profil zawodnika:** imię (wyświetlane nad zawodnikiem zamiast „TY”), numer na koszulce, pozycja, kolor koszulki,
@@ -66,7 +83,7 @@ Grupa docelowa: U11–U16.
 - **Powtórki rozłożone w czasie (system Leitnera):** zła decyzja wraca jutro, a najlepsza po 3, 7, 14 i 30 dniach.
 - **Cel tygodnia zamiast serii dni:** 3 treningi dnia w tygodniu (poniedziałek–niedziela). Nic się nie traci, każdy tydzień
   zaczyna się od nowa, a cel pasuje do tygodnia młodego zawodnika (treningi klubowe, mecze, szkoła).
-- **Medale za zasady** (każdy etap uczy jednej zasady): brąz za 1, srebro za 3, złoto za 5 najlepszych decyzji.
+- **Medale za zasady** (każdy etap uczy jednej zasady): najlepsza decyzja w 1 dniu daje brąz, w 3 dniach srebro, w 5 dniach złoto.
 - **Odznaki:** Pierwszy krok, Analityk, Błyskawica, Trening dnia, Pełny tydzień, 4 pełne tygodnie (nie muszą być pod rząd), Komplet, Złoty zawodnik.
 - **XP i poziomy:** Debiutant → Talent → Zawodnik ligowy → Kapitan → Reprezentant.
 - **Ikony przy odpowiedziach** (podanie, strzał, drybling, doskok, cofnięcie…): mniej czytania dla młodszych.

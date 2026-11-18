@@ -1,8 +1,10 @@
 import { AGE_GROUPS, DECISION_OPTIONS } from '../engine/game'
 import { pitchName, shirtOf } from '../profile'
-import { DAILY_SIZE, dueItems, level, medalFor, todayISO, trainedToday, weekProgress } from '../progress'
+import { albumCompletion } from '../card'
+import { BADGES, DAILY_SIZE, dueItems, medalFor, todayISO, trainedToday, weekProgress } from '../progress'
 import { CATALOG } from '../scenarios'
 import Library from './Library'
+import PlayerCard from './PlayerCard'
 import { WeekDots } from './ProgressScreen'
 
 export default function Home({
@@ -16,12 +18,14 @@ export default function Home({
   onTraining,
   onEditProfile,
   onProgress,
+  onCard,
+  card,
   onCoach,
   onShareSet,
 }) {
   const { decisionSeconds, ageGroup, sound } = settings
   const today = todayISO()
-  const lv = level(progress.xp)
+  const album = albumCompletion(progress, Object.keys(BADGES))
   const week = weekProgress(progress, today)
   const repeats = dueItems(progress, today).length
   const done = trainedToday(progress, today)
@@ -41,10 +45,10 @@ export default function Home({
           <span className="min-w-0 text-left">
             <span className="block truncate font-extrabold text-white">{pitchName(profile) === 'TY' ? 'Twój zawodnik' : profile.name}</span>
             <span className="block text-xs text-slate-400">
-              {lv.name} · {progress.xp} XP
+              Karta {card.overall} · {card.tier.label}
             </span>
             <span className="mt-1 block h-1.5 w-32 overflow-hidden rounded-full bg-slate-800">
-              <span className="block h-full rounded-full bg-lime-400" style={{ width: `${Math.round(lv.share * 100)}%` }} />
+              <span className="block h-full rounded-full bg-lime-400" style={{ width: `${card.overall}%` }} />
             </span>
           </span>
         </button>
@@ -72,18 +76,29 @@ export default function Home({
             </span>
           </div>
         </div>
-        <div className="panel flex flex-col justify-between gap-3 !p-5">
-          <div>
-            <p className="eyebrow">Twoje zasady</p>
-            <p className="mt-1 text-3xl font-black text-white">
-              {CATALOG.filter((c) => medalFor(progress.items[c.key])).length}
-              <span className="text-lg text-slate-500"> / {CATALOG.length}</span>
-            </p>
-            <p className="text-sm text-slate-400">z medalem · {Object.keys(progress.badges).length} odznak</p>
-          </div>
-          <button type="button" className="btn-secondary self-start" onClick={onProgress}>
-            Moje postępy →
+        <div className="panel flex gap-4 !p-4">
+          <button type="button" className="w-28 shrink-0 transition hover:scale-[1.03] sm:w-32" onClick={onCard} aria-label="Otwórz kartę i album">
+            <PlayerCard card={card} name={profile?.name} number={profile?.number} shirt={shirt} idPrefix="mini" className="w-full drop-shadow-xl" />
           </button>
+          <div className="flex min-w-0 flex-col justify-between gap-2">
+            <div>
+              <p className="eyebrow">Twoja karta</p>
+              <p className="mt-1 text-3xl font-black text-white">
+                {card.overall} <span className="text-base font-bold text-slate-400">{card.tier.label}</span>
+              </p>
+              <p className="text-sm text-slate-400">
+                Album: {album.filled}/{album.total} kart · {CATALOG.filter((c) => medalFor(progress.items[c.key])).length}/{CATALOG.length} zasad z medalem
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" className="btn-secondary !min-h-[38px] text-sm" onClick={onCard}>
+                Karta i album →
+              </button>
+              <button type="button" className="btn-chip" onClick={onProgress}>
+                Postępy
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 
