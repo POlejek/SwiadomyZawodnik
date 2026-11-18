@@ -36,6 +36,12 @@ body {
   .hero-card {
     @apply rounded-2xl border border-lime-400/30 bg-gradient-to-br from-lime-400/15 via-slate-900/80 to-slate-900/80 p-5 sm:p-6;
   }
+  .album-card {
+    @apply flex aspect-[3/4] flex-col rounded-2xl p-3 shadow-lg;
+  }
+  .album-locked {
+    @apply border-2 border-dashed border-slate-700 bg-slate-900/60 text-slate-400;
+  }
   .modal-backdrop {
     @apply fixed inset-0 z-40 flex items-end justify-center overflow-y-auto bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4;
   }
@@ -184,6 +190,14 @@ body {
   stroke-linejoin: round;
 }
 
+.card-shine {
+  animation: card-shine 6s ease-in-out infinite;
+}
+@keyframes card-shine {
+  0%, 55% { transform: translateX(0); }
+  100% { transform: translateX(800px); }
+}
+
 @keyframes you-pulse {
   0%, 100% { transform: scale(0.92); opacity: 1; }
   50% { transform: scale(1.15); opacity: 0.55; }
@@ -198,5 +212,5 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .you-ring, .caption, .caption-goal { animation: none; }
+  .you-ring, .caption, .caption-goal, .card-shine { animation: none; }
 }

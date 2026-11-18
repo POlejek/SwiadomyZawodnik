@@ -71,7 +71,7 @@ export default function ProgressScreen({ progress, onExit }) {
           <p className="mt-1 text-xl font-extrabold text-white">
             {CATALOG.filter((c) => medalFor(progress.items[c.key])).length} / {CATALOG.length}
           </p>
-          <p className="mt-1 text-xs text-slate-400">z medalem (brąz 1×, srebro 3×, złoto 5× najlepsza decyzja)</p>
+          <p className="mt-1 text-xs text-slate-400">z medalem: najlepsza decyzja w 1 dniu = brąz, w 3 dniach = srebro, w 5 dniach = złoto</p>
         </div>
       </div>
 

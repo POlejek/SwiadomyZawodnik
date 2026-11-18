@@ -32,10 +32,12 @@ export const BADGES = {
   'pelny-tydzien': { icon: '✅', name: 'Pełny tydzień', text: `Cel tygodnia: ${WEEKLY_GOAL} treningi dnia w jednym tygodniu.` },
   'cztery-tygodnie': { icon: '🏆', name: '4 pełne tygodnie', text: 'Cel tygodnia osiągnięty w 4 tygodniach (nie muszą być pod rząd).' },
   komplet: { icon: '🧩', name: 'Komplet', text: 'Każda sytuacja rozegrana do końca.' },
+  wyzwanie: { icon: '📨', name: 'Rzucona rękawica', text: 'Pierwsze wyzwanie wysłane koledze.' },
+  'pojedynek-wygrany': { icon: '⚔️', name: 'Wygrany pojedynek', text: 'Pobiłeś wynik kolegi z wyzwania.' },
   'zloty-zawodnik': { icon: '🥇', name: 'Złoty zawodnik', text: 'Złoty medal za 5 zasad.' },
 }
 
-export const emptyProgress = () => ({ xp: 0, items: {}, trainingDays: [], badges: {}, completed: {} })
+export const emptyProgress = () => ({ xp: 0, items: {}, trainingDays: [], badges: {}, completed: {}, attrPoints: {}, cardBest: {} })
 
 export function loadProgress() {
   return { ...emptyProgress(), ...load('progress', {}) }
@@ -73,13 +75,26 @@ function grant(p, id, today, earned) {
  * A first-attempt decision. Returns { progress, earned } — `earned` lists badges won by this decision.
  * quality 3 = best (box up, comes back later), 0 = wrong (box 0, tomorrow), 1–2 = stays, tomorrow.
  */
-export function recordDecision(progress, { scenarioId, stageId, quality, timeMs, points }, today) {
+export function recordDecision(progress, { scenarioId, stageId, quality, timeMs, points, attrs }, today) {
   const key = itemKey(scenarioId, stageId)
-  const prev = progress.items[key] ?? { box: 0, plays: 0, best: 0 }
+  const prev = progress.items[key] ?? { box: 0, plays: 0, best: 0, bestDays: 0 }
   const box = quality === 3 ? Math.min(prev.box + 1, INTERVALS.length - 1) : quality === 0 ? 0 : prev.box
   const due = addDays(today, quality === 3 ? INTERVALS[box] : 1)
-  const item = { box, due, plays: prev.plays + 1, best: prev.best + (quality === 3 ? 1 : 0), last: today, lastQuality: quality }
-  let p = { ...progress, xp: progress.xp + (points ?? 0), items: { ...progress.items, [key]: item } }
+  // Medals count DAYS with a best decision, so they reward remembering, not replaying one evening.
+  const newBestDay = quality === 3 && prev.lastBestDay !== today
+  const item = {
+    box,
+    due,
+    plays: prev.plays + 1,
+    best: prev.best + (quality === 3 ? 1 : 0),
+    bestDays: (prev.bestDays ?? prev.best ?? 0) + (newBestDay ? 1 : 0),
+    lastBestDay: quality === 3 ? today : prev.lastBestDay,
+    last: today,
+    lastQuality: quality,
+  }
+  const attrPoints = { ...(progress.attrPoints ?? {}) }
+  for (const [k, v] of Object.entries(attrs ?? {})) attrPoints[k] = (attrPoints[k] ?? 0) + v
+  let p = { ...progress, xp: progress.xp + (points ?? 0), attrPoints, items: { ...progress.items, [key]: item } }
   const earned = []
   p = grant(p, 'pierwszy-krok', today, earned)
   if (quality === 3 && timeMs != null && timeMs < 5000) p = grant(p, 'blyskawica', today, earned)
@@ -155,7 +170,7 @@ export function pickDaily(progress, catalog, today, rand = Math.random, size = D
 
 export function medalFor(item) {
   if (!item) return null
-  return MEDALS.find((m) => item.best >= m.min) ?? null
+  return MEDALS.find((m) => (item.bestDays ?? item.best) >= m.min) ?? null
 }
 
 export function level(xp) {
@@ -173,4 +188,14 @@ export function comesBack(item, today) {
   if (d <= 0) return 'dziś'
   if (d === 1) return 'jutro'
   return `za ${d} dni`
+}
+
+export function recordChallengeSent(progress, today) {
+  const earned = []
+  return { progress: grant(progress, 'wyzwanie', today, earned), earned }
+}
+
+export function recordChallengeWon(progress, today) {
+  const earned = []
+  return { progress: grant(progress, 'pojedynek-wygrany', today, earned), earned }
 }

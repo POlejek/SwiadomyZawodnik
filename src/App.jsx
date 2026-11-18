@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { CARD_TIERS, albumCards, albumSnapshot, computeCard, pointsFor, withCardBest } from './card'
+import { challengeLink, challengeMessage, readChallenge } from './challenge'
+import CardScreen from './components/CardScreen'
 import CoachPanel, { readSetFromHash, shareText } from './components/CoachPanel'
 import GameScreen from './components/GameScreen'
 import Home from './components/Home'
@@ -11,6 +14,8 @@ import { loadProfile, saveProfile } from './profile'
 import {
   loadProgress,
   pickDaily,
+  recordChallengeSent,
+  recordChallengeWon,
   recordDecision,
   recordScenarioComplete,
   recordTraining,
@@ -41,6 +46,9 @@ export default function App() {
   const [progress, setProgress] = useState(loadProgress)
   const progressRef = useRef(progress)
   const [toasts, setToasts] = useState([])
+  const [incoming, setIncoming] = useState(() => readChallenge(window.location.hash, SCENARIOS))
+  const screenRef = useRef(screen)
+  screenRef.current = screen
   const [coachSet, setCoachSet] = useState(() => {
     const set = readSetFromHash(window.location.hash, ALL_IDS)
     return set && { ...set, results: load(set.key, {}) }
@@ -54,28 +62,60 @@ export default function App() {
     save('settings', next)
   }
 
-  // Every progress change goes through here: saved at once, new badges shown as toasts.
-  const updateProgress = useCallback((fn) => {
-    const { progress: next, earned } = fn(progressRef.current)
-    progressRef.current = next
-    saveProgress(next)
-    setProgress(next)
-    if (earned.length) {
-      playSound('good')
-      const items = earned.map((badge) => ({ id: `${badge}-${Date.now()}`, badge }))
-      setToasts((cur) => [...cur, ...items])
-      setTimeout(() => setToasts((cur) => cur.filter((t) => !items.includes(t))), 3800)
-    }
+  const profileRef = useRef(profile)
+  profileRef.current = profile
+
+  const toast = useCallback((items) => {
+    if (!items.length) return
+    playSound('good')
+    const stamped = items.map((t, i) => ({ ...t, id: `${Date.now()}-${i}-${Math.random()}` }))
+    setToasts((cur) => [...cur, ...stamped])
+    setTimeout(() => setToasts((cur) => cur.filter((t) => !stamped.includes(t))), 4000)
   }, [])
 
+  // Every progress change goes through here: saved at once; new badges, album cards and a higher rating pop up.
+  const updateProgress = useCallback(
+    (fn) => {
+      const before = progressRef.current
+      const today = todayISO()
+      const cardBefore = computeCard(before, SCENARIOS, profileRef.current, today)
+      const albumBefore = albumSnapshot(before)
+      const { progress: changed, earned } = fn(before)
+      const cardAfter = computeCard(changed, SCENARIOS, profileRef.current, today)
+      const next = withCardBest(changed, cardAfter)
+      progressRef.current = next
+      saveProgress(next)
+      setProgress(next)
+
+      const items = earned.map((badge) => ({ badge }))
+      for (const c of albumCards(next)) {
+        if (c.tier && !albumBefore.has(`${c.id}:${c.tier}`)) {
+          items.push({ icon: '🃏', title: 'Nowa karta w albumie', text: `${c.fundament.label} · ${CARD_TIERS.find((t) => t.id === c.tier).label}` })
+        }
+      }
+      if (cardAfter.overall > cardBefore.overall) {
+        items.push({ icon: '⬆️', title: 'Twoja karta', text: `Ocena ${cardBefore.overall} → ${cardAfter.overall}${cardAfter.tier.id !== cardBefore.tier.id ? ` · karta ${cardAfter.tier.label.toLowerCase()}!` : ''}` })
+      }
+      toast(items)
+    },
+    [toast],
+  )
+
   const onDecision = useCallback(
-    (r) => updateProgress((p) => recordDecision(p, { scenarioId: r.scenarioId, stageId: r.stageId, quality: r.quality, timeMs: r.timeMs, points: r.points }, todayISO())),
+    (r) => {
+      const stage = findScenario(r.scenarioId)?.stages.find((s) => s.id === r.stageId)
+      const attrs = stage ? pointsFor({ stage, quality: r.quality, timeMs: r.timeMs, seconds: r.seconds }) : {}
+      updateProgress((p) => recordDecision(p, { scenarioId: r.scenarioId, stageId: r.stageId, quality: r.quality, timeMs: r.timeMs, points: r.points, attrs }, todayISO()))
+    },
     [updateProgress],
   )
+  const card = computeCard(progress, SCENARIOS, profile, todayISO())
   const onWhatIfAll = useCallback(() => updateProgress((p) => recordWhatIfAll(p, todayISO())), [updateProgress])
   const onComplete = useCallback(
     (id, score, stars) => {
       updateProgress((p) => recordScenarioComplete(p, id, ALL_IDS, todayISO()))
+      const ch = screenRef.current.challenge
+      if (ch && ch.scenarioId === id && score > ch.score) updateProgress((p) => recordChallengeWon(p, todayISO()))
       setCoachSet((set) => {
         if (!set?.ids.includes(id)) return set
         const prev = set.results[id]
@@ -107,13 +147,32 @@ export default function App() {
     await shareText(`${who}${profile?.number ? ` (nr ${profile.number})` : ''} — ${coachSet.title}\n${lines}\nŚwiadomy Zawodnik`)
   }
 
+  // Challenge a friend: the link carries the scenario, the seed (same version), the score and the time limit.
+  const sendChallenge = async ({ scenarioId, seed, score, stars }) => {
+    const ch = screenRef.current.challenge
+    const link = challengeLink({
+      scenarioId,
+      seed,
+      score,
+      stars,
+      seconds: ch ? ch.seconds : seconds,
+      from: profile?.name?.trim(),
+      number: profile?.number,
+    })
+    const r = await shareText(challengeMessage({ from: profile?.name?.trim(), scenarioTitle: findScenario(scenarioId).title, score, link }))
+    if (r !== 'failed') updateProgress((p) => recordChallengeSent(p, todayISO()))
+    return r === 'shared' ? 'Wyzwanie wysłane!' : r === 'copied' ? 'Link skopiowany — wklej go koledze w wiadomości.' : `Skopiuj link: ${link}`
+  }
+
   let content
   if (screen.name === 'game') {
     content = (
       <GameScreen
-        key={screen.id}
+        key={`${screen.id}-${screen.challenge?.seed ?? ''}`}
         scenario={findScenario(screen.id)}
-        decisionSeconds={seconds}
+        challenge={screen.challenge}
+        onChallenge={sendChallenge}
+        decisionSeconds={screen.challenge ? screen.challenge.seconds : seconds}
         profile={profile}
         onExit={home}
         onDecision={onDecision}
@@ -134,6 +193,8 @@ export default function App() {
         onExit={home}
       />
     )
+  } else if (screen.name === 'card') {
+    content = <CardScreen card={card} progress={progress} profile={profile} onExit={home} />
   } else if (screen.name === 'progress') {
     content = <ProgressScreen progress={progress} onExit={home} />
   } else {
@@ -145,10 +206,22 @@ export default function App() {
         profile={profile}
         progress={progress}
         coachSet={coachSet}
+        challenge={incoming}
+        onAcceptChallenge={() => go({ name: 'game', id: incoming.scenarioId, challenge: incoming })}
+        onDismissChallenge={() => {
+          setIncoming(null)
+          try {
+            window.history.replaceState(null, '', window.location.pathname)
+          } catch {
+            /* ignore */
+          }
+        }}
         onPlay={(id) => go({ name: 'game', id })}
         onTraining={() => go({ name: 'training', items: pickDaily(progressRef.current, CATALOG, todayISO()) })}
         onEditProfile={() => setEditingProfile(true)}
         onProgress={() => go({ name: 'progress' })}
+        onCard={() => go({ name: 'card' })}
+        card={card}
         onCoach={() => setCoachOpen(true)}
         onShareSet={shareSetResult}
       />
