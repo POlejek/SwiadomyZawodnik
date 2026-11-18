@@ -19,24 +19,40 @@ golem albo rzutem karnym, dobra prowadzi do kolejnego etapu akcji.
 | Gra tyłem do bramki | Atak | 1 | obrońca blisko → odegraj, daleko → obróć się (sygnał) |
 | Asekuracja kolegi | Obrona | 2 | skośnie za kolegą → po minięciu kolegi zamiana ról |
 | Pokaż się do gry | Atak | 2 | wolna linia podania, bokiem → przyjęcie w wolne miejsce i gra do przodu |
+| Szybki rzut wolny | Stałe fragmenty | 1 | rywale zdezorganizowani → wykonaj szybko; ustawieni → spokojnie rozegraj (sygnał) |
 
-## Kategoryzacja (na setki sytuacji)
+## Zasady gry (model klubu) i kategoryzacja
 
-Każda sytuacja ma: **fazę gry** (atak, obrona, przejście do obrony/ataku, stałe fragmenty), **strefę**
-(tercja obronna / środek / tercja ataku), **liczebność** (np. `2v1`), **pozycje** i **poziom**. Każdy etap (decyzja)
-uczy jednego **fundamentu gry**. Fundamenty są pogrupowane: atak indywidualnie i grupowo, obrona indywidualnie
-i grupowo, przejścia. Lista jest w `src/taxonomy.js`.
+Sytuacje są uporządkowane według klubowego modelu **ZASADY GRY** (`src/taxonomy.js`):
 
-Lista fundamentów jest robocza. Opiera się na powszechnym podziale z polskiego szkolenia dzieci i młodzieży i trzeba
-ją dopasować co do słowa do „Dorastania w grze” (M. Ludwiczak, T. Tchórz), rozdział o fundamentach gry.
+| Atak | AO (atak → obrona) | Obrona | OA (obrona → atak) |
+|---|---|---|---|
+| 1. struktury · 2. pierwszeństwa · 3. odwaga vs cierpliwość · 4. gotowości do gry · 5. atakowania i zwalniania przestrzeni · 6. centrum gry +1 · 7. rotacji pozycji · 8. środka · 9. skupienia uwagi · 10. gotowy do obrony | 1. reakcji | 1. tarczy · 2. razem · 3. powrót pod piłkę · 4. asekuracji · 5. kontroli · 6. opóźniania · 7. gotowość do opadania (od U12) · 8. skracania pola (od U12) | 1. utrzymanie vs zaskoczenie |
 
-- **Biblioteka sytuacji** na ekranie startowym ma zakładki faz gry z licznikami, wyszukiwarkę i filtry
-  (fundament, pozycja, liczebność, poziom, nierozegrane / do powtórki). Sytuacje są pogrupowane według grup fundamentów.
-  Filtry zapamiętują się w przeglądarce.
-- **Moje postępy** pokazują medale według fundamentów. Medal fundamentu to najsłabszy medal z jego decyzji.
-- Testy pilnują, żeby każda nowa sytuacja była poprawnie skategoryzowana (`checkTaxonomy`).
+- Każdy etap (decyzja) uczy **jednej zasady**. Medale, karty w albumie, postępy i umiejętności na karcie liczą się według zasad
+  (Atak → ATA, Obrona → OBR, AO i OA → PRZ).
+- Dla zasad ze slajdów klubu (struktury, pierwszeństwa, odwaga vs cierpliwość, gotowości do gry) gra pokazuje po decyzji
+  **Sygnał** i **Kluczowe zachowanie**, a po błędnej decyzji Sygnał jako podpowiedź. Pozostałe zasady mają na razie tylko
+  nazwę — opisy uzupełnimy ze slajdów klubu.
+- Zasady bez sytuacji są w albumie w części „Wkrótce” i w filtrze biblioteki jako „(wkrótce)”.
 
-Każdy etap ma 4 odpowiedzi i dla każdej osobną animację skutku. Do tego jest skutek braku decyzji, gdy skończy się czas.
+Przypisanie decyzji do zasad:
+
+| Sytuacja | Etap → zasada |
+|---|---|
+| Obrona 2 na 1 | opóźnianie → opóźniania · linia podania → tarczy · odbita piłka → kontroli |
+| Atak 2 na 1 | prowadzenie na obrońcę → odwaga vs cierpliwość · moment podania → pierwszeństwa |
+| Wyjście spod pressingu | przyjęcie pod presją → gotowości do gry · pierwsze podanie → pierwszeństwa |
+| Pojedynek 1 na 1 przy linii | oba etapy → kontroli |
+| Wbiegnięcie w pole karne | gdzie wbiec → atakowania i zwalniania przestrzeni · wykończenie → odwaga vs cierpliwość |
+| Kontrpressing po stracie | pierwsza reakcja → reakcji (AO) · rywal w pułapce → razem |
+| Gra tyłem do bramki | odwaga vs cierpliwość |
+| Asekuracja kolegi | oba etapy → asekuracji |
+| Pokaż się do gry | gdzie się pokazać → struktury · przyjęcie bokiem → pierwszeństwa |
+| Szybki rzut wolny | gotowości do gry (sygnał: dezorganizacja rywala) |
+
+Każda sytuacja ma też: **fazę gry**, **strefę**, **liczebność** (np. `2v1`), **pozycje** i **poziom**. Biblioteka ma
+zakładki faz, wyszukiwarkę i filtry, a test `checkTaxonomy` pilnuje kategorii każdej nowej sytuacji.
 
 ## Grywalność: co sprawia, że chce się wracać
 

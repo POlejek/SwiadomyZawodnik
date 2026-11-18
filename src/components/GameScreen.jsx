@@ -6,7 +6,7 @@ import { randomSeed, seeded, shuffleWith } from '../rng'
 import { MoveIcon, iconFor } from '../icons'
 import { personalise, pitchName, shirtOf } from '../profile'
 import { buzz, canSpeak, playSound, speak, stopSpeaking } from '../sound'
-import { faza, fundament } from '../taxonomy'
+import { faza, fundament, grupa } from '../taxonomy'
 import { load, save } from '../storage'
 import Pitch from './Pitch'
 import { useClipPlayer } from './useClipPlayer'
@@ -389,10 +389,11 @@ function Feedback({ stage, state, result, last, single, dispatch }) {
         </p>
       )}
       <p className="leading-relaxed text-slate-200">{result.feedback}</p>
-      {result.correct && !choice.whatIf && (
-        <div className="rounded-lg border border-lime-400/30 bg-lime-400/10 p-3 text-sm leading-relaxed text-lime-100">
-          <span className="font-bold text-lime-300">Zasada: </span>
-          {stage.lesson}
+      {result.correct && !choice.whatIf && <PrincipleBox stage={stage} />}
+      {!result.correct && !choice.whatIf && fundament(stage.fundament)?.sygnal && (
+        <div className="rounded-lg border border-sky-400/30 bg-sky-400/10 p-3 text-sm leading-relaxed text-sky-100" data-testid="hint">
+          <span className="font-bold text-sky-300">Podpowiedź — {fundament(stage.fundament).label.toLowerCase()}. Sygnał: </span>
+          {fundament(stage.fundament).sygnal}
         </div>
       )}
 
@@ -447,6 +448,32 @@ function Feedback({ stage, state, result, last, single, dispatch }) {
             })}
           </div>
         </div>
+      )}
+    </div>
+  )
+}
+
+/** The game principle behind the decision, in the club's own words where its slides give them. */
+function PrincipleBox({ stage }) {
+  const z = fundament(stage.fundament)
+  return (
+    <div className="space-y-2 rounded-lg border border-lime-400/30 bg-lime-400/10 p-3 text-sm leading-relaxed text-lime-100" data-testid="principle">
+      <p className="text-[11px] font-bold uppercase tracking-wider text-lime-300">
+        {grupa(z.grupa)?.label} · {z.nr}. {z.label}
+        {z.odWieku ? ` (od ${z.odWieku})` : ''}
+      </p>
+      <p>{stage.lesson}</p>
+      {z.sygnal && (
+        <dl className="grid gap-1 border-t border-lime-400/20 pt-2 text-xs text-lime-50/90">
+          <div>
+            <dt className="inline font-bold text-lime-300">Sygnał: </dt>
+            <dd className="inline">{z.sygnal}</dd>
+          </div>
+          <div>
+            <dt className="inline font-bold text-lime-300">Kluczowe zachowanie: </dt>
+            <dd className="inline">{z.zachowanie}</dd>
+          </div>
+        </dl>
       )}
     </div>
   )

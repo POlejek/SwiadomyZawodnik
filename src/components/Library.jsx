@@ -20,7 +20,7 @@ const EMPTY = { q: '', faza: '', fundament: '', pozycja: '', liczebnosc: '', poz
 
 const groupOf = (sc) => fundament(sc.stages[0].fundament)?.grupa ?? 'inne'
 
-/** All situations, by phase of play and fundamental, with filters — built for hundreds of situations. */
+/** All situations, by phase of play and game principle, with filters — built for hundreds of situations. */
 export default function Library({ scenarios, profile, progress, onPlay }) {
   const [f, setF] = useState(() => {
     try {
@@ -57,13 +57,14 @@ export default function Library({ scenarios, profile, progress, onPlay }) {
 
       <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
         <input className="select lg:col-span-2" type="search" placeholder="Szukaj: np. asekuracja, 2 na 1…" value={f.q} onChange={(e) => set({ q: e.target.value })} aria-label="Szukaj sytuacji" />
-        <select className="select" value={f.fundament} onChange={(e) => set({ fundament: e.target.value })} aria-label="Fundament">
-          <option value="">Wszystkie fundamenty</option>
+        <select className="select" value={f.fundament} onChange={(e) => set({ fundament: e.target.value })} aria-label="Zasada">
+          <option value="">Wszystkie zasady</option>
           {GRUPY.map((g) => (
             <optgroup key={g.id} label={g.label}>
               {FUNDAMENTY.filter((x) => x.grupa === g.id).map((x) => (
                 <option key={x.id} value={x.id}>
-                  {x.label}
+                  {x.nr}. {x.label}
+                  {scenarios.some((sc) => fundamentyOf(sc).includes(x.id)) ? '' : ' (wkrótce)'}
                 </option>
               ))}
             </optgroup>

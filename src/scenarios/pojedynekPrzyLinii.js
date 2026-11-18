@@ -30,7 +30,7 @@ export const pojedynekPrzyLinii = {
   stages: [
     {
       id: 'dystans',
-      fundament: 'dystans',
+      fundament: 'kontrola',
       title: 'Piłka w powietrzu',
       question: 'Rywal podaje do skrzydłowego przy linii. Piłka jeszcze leci, a ty stoisz 10 metrów od niego. Co robisz?',
       lesson:
@@ -160,7 +160,7 @@ export const pojedynekPrzyLinii = {
 
     {
       id: 'wypuszczona-pilka',
-      fundament: 'odbior',
+      fundament: 'kontrola',
       title: 'Wyścig wzdłuż linii',
       question: 'Skrzydłowy wypuścił piłkę obok ciebie wzdłuż linii i chce cię przegonić. Co robisz?',
       lesson:

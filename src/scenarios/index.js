@@ -5,6 +5,7 @@ import { kontrpressing } from './kontrpressing.js'
 import { obrona2v1Skrzydlo } from './obrona2v1Skrzydlo.js'
 import { pojedynekPrzyLinii } from './pojedynekPrzyLinii.js'
 import { pokazSieDoGry } from './pokazSieDoGry.js'
+import { szybkiRzutWolny } from './szybkiRzutWolny.js'
 import { wbiegniecieBlizszySlupek } from './wbiegniecieBlizszySlupek.js'
 import { wyjscieSpodPressingu } from './wyjscieSpodPressingu.js'
 
@@ -20,6 +21,7 @@ export const SCENARIOS = [
   graTylemDoBramki,
   asekuracja,
   pokazSieDoGry,
+  szybkiRzutWolny,
 ]
 
 // Every stage of every situation — the pool for the daily training and the medals for principles.

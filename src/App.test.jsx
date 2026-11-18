@@ -107,7 +107,7 @@ describe('App', () => {
     expect(all).toBe(SCENARIOS.length)
     await user.click(screen.getByRole('tab', { name: /^Obrona/ }))
     expect(screen.getAllByTestId('scenario-card').length).toBe(SCENARIOS.filter((s) => s.faza === 'obrona').length)
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Fundament' }), 'opoznianie')
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Zasada' }), 'opoznianie')
     expect(screen.getAllByTestId('scenario-card')).toHaveLength(1)
     await user.click(screen.getByRole('button', { name: 'Wyczyść filtry' }))
     await user.click(screen.getByRole('tab', { name: /^Wszystkie/ }))

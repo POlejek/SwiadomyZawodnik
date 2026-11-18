@@ -7,53 +7,72 @@
 //   positions   — positions it suits (several)
 //   level       — difficulty
 // Every stage (decision) has:
-//   fundament   — the one game fundamental it teaches; medals and the progress screen are grouped by it.
+//   fundament   — the id of the ONE game principle (zasada gry) it teaches; medals, album cards
+//                 and the progress screen are grouped by it. (The key keeps its older name.)
 //
-// The fundamentals follow the usual split used in Polish youth coaching (in attack / in defence,
-// individual / group, plus transitions). The names are a working list — to be matched word for word
-// with "Dorastanie w grze" (M. Ludwiczak, T. Tchórz), chapter on the fundamentals of the game.
+// The principles are the club's own model "ZASADY GRY": 10 in attack, 8 in defence, and one for each
+// transition (AO — attack to defence, OA — defence to attack). Explanation, signal and key behaviour are
+// filled in only where the club's own slides give them; the rest are to be completed from those slides.
 
 export const FAZY = [
   { id: 'atak', label: 'Atak' },
   { id: 'obrona', label: 'Obrona' },
-  { id: 'przejscie-obrona', label: 'Przejście do obrony' },
-  { id: 'przejscie-atak', label: 'Przejście do ataku' },
+  { id: 'przejscie-obrona', label: 'Przejście do obrony (AO)' },
+  { id: 'przejscie-atak', label: 'Przejście do ataku (OA)' },
   { id: 'stale-fragmenty', label: 'Stałe fragmenty' },
 ]
 
 export const GRUPY = [
-  { id: 'atak-ind', faza: 'atak', label: 'Atak · indywidualne' },
-  { id: 'atak-grp', faza: 'atak', label: 'Atak · grupowe' },
-  { id: 'obrona-ind', faza: 'obrona', label: 'Obrona · indywidualne' },
-  { id: 'obrona-grp', faza: 'obrona', label: 'Obrona · grupowe' },
-  { id: 'przejscia', faza: 'przejscia', label: 'Przejścia' },
+  { id: 'atak', label: 'Atak', opis: 'Otwarcie gry, budowa i kreowanie, finalizacja' },
+  { id: 'ao', label: 'Przejście atak → obrona (AO)' },
+  { id: 'obrona', label: 'Obrona' },
+  { id: 'oa', label: 'Przejście obrona → atak (OA)' },
 ]
 
+const OBS = 'Obserwacja boiska (przestrzeń, przeciwnicy, partnerzy).'
+
 export const FUNDAMENTY = [
-  // Atak — indywidualne
-  { id: 'orientacja', grupa: 'atak-ind', label: 'Orientacja przed przyjęciem', opis: 'Rozejrzyj się, zanim dostaniesz piłkę.' },
-  { id: 'przyjecie-kierunkowe', grupa: 'atak-ind', label: 'Przyjęcie kierunkowe', opis: 'Pierwszy kontakt w wolną przestrzeń, z dala od rywala.' },
-  { id: 'gra-tylem', grupa: 'atak-ind', label: 'Gra tyłem do bramki', opis: 'Rywal blisko — odegraj; rywal daleko — obróć się.' },
-  { id: 'prowadzenie', grupa: 'atak-ind', label: 'Prowadzenie piłki w wolną przestrzeń', opis: 'Prowadź piłkę tam, gdzie jest miejsce i droga do bramki.' },
-  { id: 'drybling', grupa: 'atak-ind', label: 'Gra 1 na 1 w ataku', opis: 'Atakuj obrońcę, gdy masz za nim przestrzeń.' },
-  { id: 'wykonczenie', grupa: 'atak-ind', label: 'Wykończenie', opis: 'Celuj tam, gdzie nie ma bramkarza.' },
-  // Atak — grupowe
-  { id: 'wsparcie', grupa: 'atak-grp', label: 'Wsparcie (pokazanie się do gry)', opis: 'Ustaw się w wolnej linii podania, z otwartym ciałem.' },
-  { id: 'przewaga', grupa: 'atak-grp', label: 'Gra w przewadze', opis: 'Zaangażuj obrońcę, potem podaj do wolnego.' },
-  { id: 'podanie-przez-linie', grupa: 'atak-grp', label: 'Podanie przez linię', opis: 'Graj tam, gdzie rywal nie zamyka.' },
-  { id: 'gra-bez-pilki', grupa: 'atak-grp', label: 'Gra bez piłki w polu karnym', opis: 'Atakuj przestrzeń przed obrońcą.' },
-  // Obrona — indywidualne
-  { id: 'dystans', grupa: 'obrona-ind', label: 'Doskok i dystans', opis: 'Skracaj dystans, gdy piłka leci; hamuj przed rywalem.' },
-  { id: 'opoznianie', grupa: 'obrona-ind', label: 'Opóźnianie', opis: 'W osłabieniu nie doskakuj — kupuj czas.' },
-  { id: 'kierowanie', grupa: 'obrona-ind', label: 'Kierowanie rywala', opis: 'Ustaw ciało bokiem i spychaj rywala do linii.' },
-  { id: 'odbior', grupa: 'obrona-ind', label: 'Odbiór i walka o piłkę', opis: 'Atakuj piłkę, gdy rywal wypuści ją za daleko.' },
-  { id: 'bezpieczenstwo', grupa: 'obrona-ind', label: 'Bezpieczeństwo przy własnej bramce', opis: 'Bezpańska piłka w polu karnym — wybij w bok.' },
-  // Obrona — grupowe
-  { id: 'asekuracja', grupa: 'obrona-grp', label: 'Asekuracja', opis: 'Stań skośnie za kolegą, który atakuje piłkę.' },
-  { id: 'linia-podania', grupa: 'obrona-grp', label: 'Zamykanie linii podania', opis: 'Pilnuj podania, a nie tylko zawodnika.' },
-  // Przejścia
-  { id: 'kontrpressing', grupa: 'przejscia', label: 'Kontrpressing', opis: 'Po stracie blisko piłki — doskocz od razu.' },
-  { id: 'powrot', grupa: 'przejscia', label: 'Powrót za linię piłki', opis: 'Po stracie daleko od piłki — wróć i zamknij środek.' },
+  // ATAK
+  {
+    id: 'struktura', nr: 1, grupa: 'atak', label: 'Zasada struktury',
+    opis: 'Ustawienie szerokości i głębokości zespołu dla zawodnika z piłką (pozycjonowanie drużyny). Rozciągnięcie przeciwników — stworzenie więcej wolnej, realnej przestrzeni do ataku w sektorze środkowym.',
+    sygnal: 'Drużyna posiada piłkę.', zachowanie: OBS,
+  },
+  {
+    id: 'pierwszenstwo', nr: 2, grupa: 'atak', label: 'Zasada pierwszeństwa',
+    opis: 'Wykorzystywanie lepiej ustawionego kolegi, następnie decyzja, jak swoim ustawieniem dalej mogę pomóc drużynie. Jeśli podanie do lepiej ustawionego kolegi jest niemożliwe, wybieramy wprowadzenie lub 1x1.',
+    sygnal: 'Partner z drużyny jest lepiej ustawiony ode mnie = bliżej bramki przeciwnika, bez presji rywala.', zachowanie: OBS,
+  },
+  {
+    id: 'odwaga-cierpliwosc', nr: 3, grupa: 'atak', label: 'Zasada odwaga vs cierpliwość',
+    opis: 'Wykorzystywanie wolnych przestrzeni z piłką — poprzez wprowadzenie, podanie, uderzenie lub 1x1. Brak miejsca (zamknięta przestrzeń, przewaga rywali) = utrzymanie i zmiana miejsca ataku.',
+    sygnal: 'Odwaga — mam przestrzeń. Cierpliwość — nie mam przestrzeni.', zachowanie: OBS,
+  },
+  {
+    id: 'gotowosc-do-gry', nr: 4, grupa: 'atak', label: 'Zasada gotowości do gry',
+    opis: 'Zawodnik w każdym momencie gry próbuje szybko zareagować na wydarzenia boiskowe. Szczególnie martwe momenty gry (SFG). Nie daje się zaskoczyć i sam próbuje zaskoczyć przeciwnika.',
+    sygnal: 'W ataku — dezorganizacja przeciwnika. W obronie — szybka obserwacja piłki i przeciwników.',
+    zachowanie: 'Obserwacja przeciwników w ataku. Obserwacja piłki i przeciwników w obronie.',
+  },
+  { id: 'atakowanie-przestrzeni', nr: 5, grupa: 'atak', label: 'Zasada atakowania i zwalniania przestrzeni' },
+  { id: 'centrum-gry', nr: 6, grupa: 'atak', label: 'Zasada centrum gry +1' },
+  { id: 'rotacja-pozycji', nr: 7, grupa: 'atak', label: 'Zasada rotacji pozycji' },
+  { id: 'srodek', nr: 8, grupa: 'atak', label: 'Zasada środka' },
+  { id: 'skupienie-uwagi', nr: 9, grupa: 'atak', label: 'Zasada skupienia uwagi' },
+  { id: 'gotowy-do-obrony', nr: 10, grupa: 'atak', label: 'Zasada gotowy do obrony' },
+  // AO
+  { id: 'reakcja', nr: 1, grupa: 'ao', label: 'Zasada reakcji' },
+  // OBRONA
+  { id: 'tarcza', nr: 1, grupa: 'obrona', label: 'Zasada tarczy' },
+  { id: 'razem', nr: 2, grupa: 'obrona', label: 'Zasada razem' },
+  { id: 'powrot-pod-pilke', nr: 3, grupa: 'obrona', label: 'Zasada powrót pod piłkę' },
+  { id: 'asekuracja', nr: 4, grupa: 'obrona', label: 'Zasada asekuracji' },
+  { id: 'kontrola', nr: 5, grupa: 'obrona', label: 'Zasada kontroli' },
+  { id: 'opoznianie', nr: 6, grupa: 'obrona', label: 'Zasada opóźniania' },
+  { id: 'gotowosc-do-opadania', nr: 7, grupa: 'obrona', label: 'Zasada gotowość do opadania', odWieku: 'U12' },
+  { id: 'skracanie-pola', nr: 8, grupa: 'obrona', label: 'Zasada skracania pola', odWieku: 'U12' },
+  // OA
+  { id: 'utrzymanie-zaskoczenie', nr: 1, grupa: 'oa', label: 'Zasada utrzymanie vs zaskoczenie' },
 ]
 
 export const STREFY = [

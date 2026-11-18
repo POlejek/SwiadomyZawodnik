@@ -79,7 +79,7 @@ export const graTylemDoBramki = {
   stages: [
     {
       id: 'tylem',
-      fundament: 'gra-tylem',
+      fundament: 'odwaga-cierpliwosc',
       title: 'Przyjęcie tyłem do bramki',
       question: 'Kolega podaje do ciebie, stoisz tyłem do bramki rywala. Patrz, gdzie jest obrońca! Co robisz?',
       lesson:

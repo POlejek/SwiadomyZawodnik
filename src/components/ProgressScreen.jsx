@@ -91,8 +91,8 @@ export default function ProgressScreen({ progress, onExit }) {
         })}
       </div>
 
-      <h2 className="mb-1 mt-8 text-lg font-extrabold text-white">Fundamenty gry</h2>
-      <p className="mb-3 text-sm text-slate-400">Każda decyzja uczy jednego fundamentu. Medal fundamentu to najsłabszy medal z jego decyzji.</p>
+      <h2 className="mb-1 mt-8 text-lg font-extrabold text-white">Zasady gry</h2>
+      <p className="mb-3 text-sm text-slate-400">Każda decyzja uczy jednej zasady gry. Medal zasady to najsłabszy medal z jej decyzji.</p>
       <div className="space-y-6">
         {GRUPY.map((g) => {
           const fs = FUNDAMENTY.filter((f) => f.grupa === g.id && CATALOG.some((c) => c.fundament === f.id))
@@ -110,8 +110,11 @@ export default function ProgressScreen({ progress, onExit }) {
                       <div className="flex items-start gap-3">
                         <Medal medal={weakest} />
                         <div className="min-w-0 flex-1">
-                          <p className="font-bold text-white">{f.label}</p>
-                          <p className="text-xs text-slate-400">{f.opis}</p>
+                          <p className="font-bold text-white">
+                            {f.nr}. {f.label}
+                            {f.odWieku ? ` (od ${f.odWieku})` : ''}
+                          </p>
+                          {f.opis && <p className="text-xs text-slate-400">{f.opis}</p>}
                         </div>
                       </div>
                       <div className="mt-3 space-y-2 border-t border-slate-800 pt-3">
