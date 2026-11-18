@@ -22,6 +22,9 @@ export default function Home({
   card,
   onCoach,
   onShareSet,
+  challenge,
+  onAcceptChallenge,
+  onDismissChallenge,
 }) {
   const { decisionSeconds, ageGroup, sound } = settings
   const today = todayISO()
@@ -102,6 +105,10 @@ export default function Home({
         </div>
       </section>
 
+      {challenge && (
+        <ChallengeBanner challenge={challenge} scenario={scenarios.find((s) => s.id === challenge.scenarioId)} onAccept={onAcceptChallenge} onDismiss={onDismissChallenge} />
+      )}
+
       {coachSet && <CoachSetBanner set={coachSet} scenarios={scenarios} onPlay={onPlay} onShare={onShareSet} />}
 
       <div className="mb-4 mt-10 flex flex-wrap items-center justify-between gap-3">
@@ -180,6 +187,33 @@ function CoachSetBanner({ set, scenarios, onPlay, onShare }) {
           Wyślij wynik trenerowi
         </button>
       )}
+    </section>
+  )
+}
+
+function ChallengeBanner({ challenge, scenario, onAccept, onDismiss }) {
+  return (
+    <section className="mt-6 overflow-hidden rounded-2xl border border-fuchsia-400/40 bg-gradient-to-br from-fuchsia-500/20 via-indigo-500/15 to-slate-900 p-5" data-testid="challenge-banner">
+      <p className="eyebrow !text-fuchsia-300">⚔️ Wyzwanie</p>
+      <h2 className="mt-1 text-2xl font-extrabold text-white">
+        {challenge.from}
+        {challenge.number ? ` (nr ${challenge.number})` : ''} wyzywa cię!
+      </h2>
+      <p className="mt-1 text-slate-200">
+        „{scenario.title}”: <b className="text-white">{challenge.score} pkt</b>{' '}
+        <span className="text-yellow-300">{`${'★'.repeat(challenge.stars)}${'☆'.repeat(3 - challenge.stars)}`}</span>
+      </p>
+      <p className="mt-1 text-sm text-slate-400">
+        Ta sama wersja sytuacji{challenge.seconds ? `, ${challenge.seconds} s na decyzję` : ', bez limitu czasu'}. Pobijesz ten wynik?
+      </p>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button type="button" className="btn-primary" onClick={onAccept}>
+          Przyjmuję wyzwanie
+        </button>
+        <button type="button" className="btn-secondary" onClick={onDismiss}>
+          Nie teraz
+        </button>
+      </div>
     </section>
   )
 }

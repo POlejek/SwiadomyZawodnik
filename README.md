@@ -73,6 +73,17 @@ Grupa docelowa: U11–U16.
 - Symulacja w testach pilnuje tempa: zawodnik grający codziennie bezbłędnie ma po 30 dniach ok. 68,
   a typowy (3× w tygodniu, 70% trafień) ok. 52 po miesiącu, 70 po 3 miesiącach, 84 po pół roku i 92 po roku.
 
+## Wyzwanie dla kolegi (przez link, bez kont)
+
+- Po rozegraniu sytuacji przycisk **„Wyzwij kolegę”** wysyła link (udostępnianie w telefonie albo schowek), np.
+  `…/#wyzwanie=obrona-2v1-skrzydlo&ziarno=777&pkt=212&gw=2&czas=25&od=Kuba&nr=9`.
+- **Uczciwie:** link zawiera **ziarno losowania**, więc kolega gra dokładnie tę samą wersję sytuacji (ten sam wariant
+  z sygnałem, ta sama strona boiska, ta sama kolejność odpowiedzi) i z tym samym czasem na decyzję (`src/rng.js`).
+- Kolega widzi na ekranie startowym baner „Kuba (nr 9) wyzywa cię!”. Po grze dostaje porównanie wyników i przycisk **„Wyślij rewanż”**.
+- Karty specjalne do albumu: **Rzucona rękawica** (pierwsze wyzwanie) i **Wygrany pojedynek**.
+- Dane z linku są sprawdzane: nieznana sytuacja albo niemożliwy wynik są ignorowane. Bez kont nie da się jednak
+  całkiem zabezpieczyć wyniku przed ręczną zmianą linku — to zabawa między kolegami, a nie ranking.
+
 ## Motywacja i postęp (bez kont — zapis w przeglądarce)
 
 - **Profil zawodnika:** imię (wyświetlane nad zawodnikiem zamiast „TY”), numer na koszulce, pozycja, kolor koszulki,

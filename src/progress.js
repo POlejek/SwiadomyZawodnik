@@ -32,6 +32,8 @@ export const BADGES = {
   'pelny-tydzien': { icon: '✅', name: 'Pełny tydzień', text: `Cel tygodnia: ${WEEKLY_GOAL} treningi dnia w jednym tygodniu.` },
   'cztery-tygodnie': { icon: '🏆', name: '4 pełne tygodnie', text: 'Cel tygodnia osiągnięty w 4 tygodniach (nie muszą być pod rząd).' },
   komplet: { icon: '🧩', name: 'Komplet', text: 'Każda sytuacja rozegrana do końca.' },
+  wyzwanie: { icon: '📨', name: 'Rzucona rękawica', text: 'Pierwsze wyzwanie wysłane koledze.' },
+  'pojedynek-wygrany': { icon: '⚔️', name: 'Wygrany pojedynek', text: 'Pobiłeś wynik kolegi z wyzwania.' },
   'zloty-zawodnik': { icon: '🥇', name: 'Złoty zawodnik', text: 'Złoty medal za 5 zasad.' },
 }
 
@@ -186,4 +188,14 @@ export function comesBack(item, today) {
   if (d <= 0) return 'dziś'
   if (d === 1) return 'jutro'
   return `za ${d} dni`
+}
+
+export function recordChallengeSent(progress, today) {
+  const earned = []
+  return { progress: grant(progress, 'wyzwanie', today, earned), earned }
+}
+
+export function recordChallengeWon(progress, today) {
+  const earned = []
+  return { progress: grant(progress, 'pojedynek-wygrany', today, earned), earned }
 }

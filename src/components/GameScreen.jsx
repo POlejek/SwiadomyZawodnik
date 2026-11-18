@@ -2,6 +2,7 @@ import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { endState, eventsAt, stateAt } from '../engine/animation'
 import { GRADES, choiceResult, currentStage, gameReducer, maxScore, quality, singleStage, startGame, stars } from '../engine/game'
 import { prepareRun } from '../engine/variants'
+import { randomSeed, seeded, shuffleWith } from '../rng'
 import { MoveIcon, iconFor } from '../icons'
 import { personalise, pitchName, shirtOf } from '../profile'
 import { buzz, canSpeak, playSound, speak, stopSpeaking } from '../sound'
@@ -12,14 +13,6 @@ import { useClipPlayer } from './useClipPlayer'
 
 const LETTERS = ['A', 'B', 'C', 'D']
 
-function shuffle(list) {
-  const a = [...list]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
 
 const toneOf = (grade) => GRADES[grade]?.tone ?? 'bad'
 
@@ -38,11 +31,16 @@ export default function GameScreen({
   onWhatIfAll,
   onComplete,
   onSingleDone,
+  seed,
+  challenge,
+  onChallenge,
 }) {
   const timerOn = decisionSeconds > 0
   // Every run is a fresh version: random cue variants and, half of the time, the mirrored side of the pitch.
+  // Every run has a seed: the same seed replays the same version (used by challenge links).
   const prepare = () => {
-    const run = prepareRun(baseScenario)
+    const runSeed = challenge?.seed ?? seed ?? randomSeed()
+    const run = { ...prepareRun(baseScenario, seeded(runSeed)), seed: runSeed }
     return single ? singleStage(run, single.stageIndex) : run
   }
   const [state, dispatch] = useReducer(gameReducer, null, () => startGame(prepare()))
@@ -114,7 +112,7 @@ export default function GameScreen({
   }, [state.phase, state.playId])
 
   // Answers in random order every run, so players learn the football, not the button position.
-  const options = useMemo(() => shuffle(stage.options), [stage, state.runId])
+  const options = useMemo(() => shuffleWith(stage.options, seeded(scenario.seed * 31 + state.stageIndex + 1)), [stage, scenario.seed, state.stageIndex])
 
   // Decision clock.
   const [elapsed, setElapsed] = useState(0)
@@ -179,7 +177,7 @@ export default function GameScreen({
 
   if (state.phase === 'summary') {
     if (single) return null
-    return <Summary state={state} onRestart={restart} onExit={onExit} />
+    return <Summary state={state} onRestart={restart} onExit={onExit} challenge={challenge} onChallenge={onChallenge} />
   }
 
   return (
@@ -454,10 +452,12 @@ function Feedback({ stage, state, result, last, single, dispatch }) {
   )
 }
 
-function Summary({ state, onRestart, onExit }) {
+function Summary({ state, onRestart, onExit, challenge, onChallenge }) {
   const { scenario } = state
   const s = stars(state)
   const best = state.results.filter((r) => r.correct).length
+  const [sent, setSent] = useState('')
+  const send = async () => setSent(await onChallenge({ scenarioId: scenario.id, seed: scenario.seed, score: state.score, stars: s }))
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8" data-testid="summary">
       <button type="button" onClick={onExit} className="btn-ghost mb-4" aria-label="Wróć do listy sytuacji">
@@ -479,8 +479,27 @@ function Summary({ state, onRestart, onExit }) {
         <p className="text-slate-300">
           Najlepsze decyzje za pierwszym razem: <b className="text-white">{best}</b> z {scenario.stages.length}
         </p>
-        <p className="text-sm text-slate-400">Zagraj jeszcze raz — sytuacja może potoczyć się inaczej albo drugą stroną boiska.</p>
+        {!challenge && <p className="text-sm text-slate-400">Zagraj jeszcze raz — sytuacja może potoczyć się inaczej albo drugą stroną boiska.</p>}
       </div>
+
+      {challenge && <Duel challenge={challenge} score={state.score} stars={s} />}
+
+      {onChallenge && (
+        <div className="panel mt-4 flex flex-wrap items-center justify-between gap-3 !p-4" data-testid="challenge-box">
+          <div className="min-w-0">
+            <p className="font-bold text-white">{challenge ? 'Odpowiedz rewanżem' : 'Wyzwij kolegę'}</p>
+            <p className="text-sm text-slate-400">
+              {challenge
+                ? 'Wyślij swój wynik — kolega zagra tę samą wersję jeszcze raz.'
+                : 'Kolega zagra dokładnie tę samą wersję sytuacji, z tym samym czasem. Kto zdobędzie więcej punktów?'}
+            </p>
+            {sent && <p className="mt-1 text-sm text-lime-300">{sent}</p>}
+          </div>
+          <button type="button" className="btn-primary" onClick={send}>
+            {challenge ? 'Wyślij rewanż' : 'Wyzwij kolegę'}
+          </button>
+        </div>
+      )}
 
       <div className="mt-6 space-y-3">
         {scenario.stages.map((st, i) => {
@@ -515,6 +534,36 @@ function Summary({ state, onRestart, onExit }) {
           Inne sytuacje
         </button>
       </div>
+    </div>
+  )
+}
+
+function Duel({ challenge, score, stars: myStars }) {
+  const result = score > challenge.score ? 'win' : score === challenge.score ? 'draw' : 'lose'
+  const head = { win: 'Wygrałeś pojedynek!', draw: 'Remis!', lose: 'Tym razem lepszy był kolega' }[result]
+  const color = { win: 'text-lime-300', draw: 'text-sky-300', lose: 'text-amber-300' }[result]
+  const starRow = (n) => `${'★'.repeat(n)}${'☆'.repeat(3 - n)}`
+  return (
+    <div className="panel mt-4 text-center" data-testid="duel">
+      <p className="eyebrow">Pojedynek</p>
+      <p className={`mt-1 text-2xl font-extrabold ${color}`}>{head}</p>
+      <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+        <div>
+          <p className="text-sm font-semibold text-slate-300">Ty</p>
+          <p className="text-4xl font-black tabular-nums text-white">{score}</p>
+          <p className="text-yellow-300">{starRow(myStars)}</p>
+        </div>
+        <p className="text-2xl font-black text-slate-600">:</p>
+        <div>
+          <p className="truncate text-sm font-semibold text-slate-300">
+            {challenge.from}
+            {challenge.number ? ` (nr ${challenge.number})` : ''}
+          </p>
+          <p className="text-4xl font-black tabular-nums text-white">{challenge.score}</p>
+          <p className="text-yellow-300">{starRow(challenge.stars)}</p>
+        </div>
+      </div>
+      {result === 'lose' && <p className="mt-3 text-sm text-slate-400">Zagraj jeszcze raz tę samą wersję i spróbuj go pobić.</p>}
     </div>
   )
 }

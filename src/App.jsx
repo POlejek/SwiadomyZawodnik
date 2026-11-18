@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { CARD_TIERS, albumCards, albumSnapshot, computeCard, pointsFor, withCardBest } from './card'
+import { challengeLink, challengeMessage, readChallenge } from './challenge'
 import CardScreen from './components/CardScreen'
 import CoachPanel, { readSetFromHash, shareText } from './components/CoachPanel'
 import GameScreen from './components/GameScreen'
@@ -13,6 +14,8 @@ import { loadProfile, saveProfile } from './profile'
 import {
   loadProgress,
   pickDaily,
+  recordChallengeSent,
+  recordChallengeWon,
   recordDecision,
   recordScenarioComplete,
   recordTraining,
@@ -43,6 +46,9 @@ export default function App() {
   const [progress, setProgress] = useState(loadProgress)
   const progressRef = useRef(progress)
   const [toasts, setToasts] = useState([])
+  const [incoming, setIncoming] = useState(() => readChallenge(window.location.hash, SCENARIOS))
+  const screenRef = useRef(screen)
+  screenRef.current = screen
   const [coachSet, setCoachSet] = useState(() => {
     const set = readSetFromHash(window.location.hash, ALL_IDS)
     return set && { ...set, results: load(set.key, {}) }
@@ -108,6 +114,8 @@ export default function App() {
   const onComplete = useCallback(
     (id, score, stars) => {
       updateProgress((p) => recordScenarioComplete(p, id, ALL_IDS, todayISO()))
+      const ch = screenRef.current.challenge
+      if (ch && ch.scenarioId === id && score > ch.score) updateProgress((p) => recordChallengeWon(p, todayISO()))
       setCoachSet((set) => {
         if (!set?.ids.includes(id)) return set
         const prev = set.results[id]
@@ -139,13 +147,32 @@ export default function App() {
     await shareText(`${who}${profile?.number ? ` (nr ${profile.number})` : ''} — ${coachSet.title}\n${lines}\nŚwiadomy Zawodnik`)
   }
 
+  // Challenge a friend: the link carries the scenario, the seed (same version), the score and the time limit.
+  const sendChallenge = async ({ scenarioId, seed, score, stars }) => {
+    const ch = screenRef.current.challenge
+    const link = challengeLink({
+      scenarioId,
+      seed,
+      score,
+      stars,
+      seconds: ch ? ch.seconds : seconds,
+      from: profile?.name?.trim(),
+      number: profile?.number,
+    })
+    const r = await shareText(challengeMessage({ from: profile?.name?.trim(), scenarioTitle: findScenario(scenarioId).title, score, link }))
+    if (r !== 'failed') updateProgress((p) => recordChallengeSent(p, todayISO()))
+    return r === 'shared' ? 'Wyzwanie wysłane!' : r === 'copied' ? 'Link skopiowany — wklej go koledze w wiadomości.' : `Skopiuj link: ${link}`
+  }
+
   let content
   if (screen.name === 'game') {
     content = (
       <GameScreen
-        key={screen.id}
+        key={`${screen.id}-${screen.challenge?.seed ?? ''}`}
         scenario={findScenario(screen.id)}
-        decisionSeconds={seconds}
+        challenge={screen.challenge}
+        onChallenge={sendChallenge}
+        decisionSeconds={screen.challenge ? screen.challenge.seconds : seconds}
         profile={profile}
         onExit={home}
         onDecision={onDecision}
@@ -179,6 +206,16 @@ export default function App() {
         profile={profile}
         progress={progress}
         coachSet={coachSet}
+        challenge={incoming}
+        onAcceptChallenge={() => go({ name: 'game', id: incoming.scenarioId, challenge: incoming })}
+        onDismissChallenge={() => {
+          setIncoming(null)
+          try {
+            window.history.replaceState(null, '', window.location.pathname)
+          } catch {
+            /* ignore */
+          }
+        }}
         onPlay={(id) => go({ name: 'game', id })}
         onTraining={() => go({ name: 'training', items: pickDaily(progressRef.current, CATALOG, todayISO()) })}
         onEditProfile={() => setEditingProfile(true)}

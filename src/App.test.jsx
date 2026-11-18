@@ -125,6 +125,43 @@ describe('App', () => {
     expect(screen.getAllByTestId('album-card').length).toBeGreaterThan(5)
   })
 
+  it('challenge from a friend: same version, a duel result and a revenge button', async () => {
+    window.location.hash = '#wyzwanie=obrona-2v1-skrzydlo&ziarno=12345&pkt=10&gw=0&czas=0&od=Kuba&nr=9'
+    try {
+      const user = userEvent.setup()
+      render(<App />)
+      await user.click(screen.getByRole('button', { name: 'Pomiń' }))
+      const banner = screen.getByTestId('challenge-banner')
+      expect(banner).toHaveTextContent('Kuba (nr 9) wyzywa cię!')
+      expect(banner).toHaveTextContent('10 pkt')
+      await user.click(within(banner).getByRole('button', { name: 'Przyjmuję wyzwanie' }))
+      for (const st of sc.stages) {
+        await skip(user)
+        await user.click(screen.getByRole('button', { name: new RegExp(st.options.find((o) => o.correct).label.slice(0, 20)) }))
+        await skip(user)
+        await user.click(screen.getByRole('button', { name: /Dalej|Podsumowanie/ }))
+      }
+      expect(screen.getByTestId('duel')).toHaveTextContent('Wygrałeś pojedynek!')
+      expect(screen.getByRole('button', { name: 'Wyślij rewanż' })).toBeInTheDocument()
+      expect(screen.getAllByText('Wygrany pojedynek').length).toBeGreaterThan(0) // badge toast
+    } finally {
+      window.location.hash = ''
+    }
+  })
+
+  it('after a situation the player can challenge a friend', async () => {
+    const user = userEvent.setup()
+    await start(user)
+    await playScenario(user, sc.title)
+    for (const st of sc.stages) {
+      await skip(user)
+      await user.click(screen.getByRole('button', { name: new RegExp(st.options.find((o) => o.correct).label.slice(0, 20)) }))
+      await skip(user)
+      await user.click(screen.getByRole('button', { name: /Dalej|Podsumowanie/ }))
+    }
+    expect(within(screen.getByTestId('challenge-box')).getByRole('button', { name: 'Wyzwij kolegę' })).toBeInTheDocument()
+  })
+
   it('answers with the keyboard', async () => {
     const user = userEvent.setup()
     await start(user)

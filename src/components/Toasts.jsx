@@ -4,7 +4,7 @@ import { BADGES } from '../progress'
 export default function Toasts({ toasts }) {
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex flex-col items-center gap-2 px-4" aria-live="polite">
-      {toasts.map((t) => {
+      {toasts.slice(-3).map((t) => {
         let icon = t.icon
         let title = t.title
         let text = t.text
