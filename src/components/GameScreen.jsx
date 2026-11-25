@@ -8,7 +8,7 @@ import { personalise, pitchName, shirtOf } from '../profile'
 import { buzz, canSpeak, playSound, speak, stopSpeaking } from '../sound'
 import { faza, fundament, grupa } from '../taxonomy'
 import { load, save } from '../storage'
-import Pitch from './Pitch'
+import PitchView from './PitchView'
 import { useClipPlayer } from './useClipPlayer'
 
 const LETTERS = ['A', 'B', 'C', 'D']
@@ -185,7 +185,7 @@ export default function GameScreen({
       <TopBar scenario={scenario} state={state} onExit={onExit} sessionLabel={sessionLabel} />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start">
         <div className="pitch-frame">
-          <Pitch entities={entities} world={world} highlights={highlights} captions={captions} homeShirt={shirt} youLabel={youLabel} />
+          <PitchView entities={entities} world={world} highlights={highlights} captions={captions} homeShirt={shirt} youLabel={youLabel} facingUp={scenario.facingUp} />
           <Legend entities={entities} shirt={shirt} youLabel={youLabel} />
         </div>
         <section className="panel" aria-label="Decyzja">

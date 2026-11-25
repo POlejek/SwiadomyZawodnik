@@ -9,6 +9,7 @@ import ProfileModal from './components/ProfileModal'
 import ProgressScreen from './components/ProgressScreen'
 import Toasts from './components/Toasts'
 import TrainingSession from './components/TrainingSession'
+import { ViewContext } from './components/PitchView'
 import { AGE_GROUPS, DECISION_OPTIONS, DEFAULT_DECISION_SECONDS } from './engine/game'
 import { loadProfile, saveProfile } from './profile'
 import {
@@ -31,7 +32,7 @@ function loadSettings() {
   const saved = load('settings', {})
   const ageGroup = AGE_GROUPS.some((g) => g.id === saved.ageGroup) ? saved.ageGroup : 'u13'
   const decisionSeconds = DECISION_OPTIONS.includes(saved.decisionSeconds) ? saved.decisionSeconds : DEFAULT_DECISION_SECONDS
-  return { ageGroup, decisionSeconds, sound: saved.sound ?? true }
+  return { ageGroup, decisionSeconds, sound: saved.sound ?? true, view: saved.view === '2d' ? '2d' : '3d' }
 }
 
 const ALL_IDS = SCENARIOS.map((s) => s.id)
@@ -229,25 +230,27 @@ export default function App() {
   }
 
   return (
-    <main className="min-h-dvh">
-      {content}
-      {(editingProfile || !profile) && (
-        <ProfileModal
-          first={!profile}
-          profile={profile}
-          ageGroup={settings.ageGroup}
-          onClose={() => setEditingProfile(false)}
-          onSave={(p, age) => {
-            saveProfile(p)
-            setProfile(p)
-            const g = AGE_GROUPS.find((a) => a.id === age)
-            if (g && g.id !== settings.ageGroup) changeSettings({ ageGroup: g.id, decisionSeconds: g.seconds })
-            setEditingProfile(false)
-          }}
-        />
-      )}
-      {coachOpen && <CoachPanel scenarios={SCENARIOS} onClose={() => setCoachOpen(false)} />}
-      <Toasts toasts={toasts} />
-    </main>
+    <ViewContext.Provider value={{ view: settings.view, setView: (view) => changeSettings({ view }) }}>
+      <main className="min-h-dvh">
+        {content}
+        {(editingProfile || !profile) && (
+          <ProfileModal
+            first={!profile}
+            profile={profile}
+            ageGroup={settings.ageGroup}
+            onClose={() => setEditingProfile(false)}
+            onSave={(p, age) => {
+              saveProfile(p)
+              setProfile(p)
+              const g = AGE_GROUPS.find((a) => a.id === age)
+              if (g && g.id !== settings.ageGroup) changeSettings({ ageGroup: g.id, decisionSeconds: g.seconds })
+              setEditingProfile(false)
+            }}
+          />
+        )}
+        {coachOpen && <CoachPanel scenarios={SCENARIOS} onClose={() => setCoachOpen(false)} />}
+        <Toasts toasts={toasts} />
+      </main>
+    </ViewContext.Provider>
   )
 }

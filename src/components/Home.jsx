@@ -6,6 +6,7 @@ import { CATALOG } from '../scenarios'
 import Library from './Library'
 import PlayerCard from './PlayerCard'
 import { WeekDots } from './ProgressScreen'
+import { canDraw3D } from './PitchView'
 
 export default function Home({
   scenarios,
@@ -141,6 +142,15 @@ export default function Home({
               ))}
             </select>
           </label>
+          {canDraw3D() && (
+            <label className="flex items-center gap-2">
+              Widok boiska
+              <select className="select" value={settings.view} onChange={(e) => onSettings({ view: e.target.value })}>
+                <option value="3d">3D — z oczu zawodnika</option>
+                <option value="2d">2D — z góry</option>
+              </select>
+            </label>
+          )}
           <label className="flex cursor-pointer items-center gap-2">
             <input type="checkbox" className="h-4 w-4 accent-lime-400" checked={sound} onChange={(e) => onSettings({ sound: e.target.checked })} />
             Dźwięk

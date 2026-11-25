@@ -6,6 +6,8 @@ export default defineConfig({
   base: './',
   plugins: [react()],
   server: { host: true, port: 3000 },
+  // three.js (the 3D view) is its own chunk, loaded only when the 3D view is shown.
+  build: { chunkSizeWarningLimit: 700 },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.js'],
