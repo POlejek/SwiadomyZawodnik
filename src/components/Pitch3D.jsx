@@ -352,7 +352,7 @@ export function cameraTarget(world, youId, facingUp, aspect, fov, extraPoints = 
   for (const [id, p] of Object.entries(world.players)) {
     const keeper = goalkeepers.has(id)
     const near = Math.min(Math.hypot(p.x - ball.x, p.y - ball.y), Math.hypot(p.x - you.x, p.y - you.y))
-    if (near < (keeper ? 10 : 26)) points.push([p.x, p.y, 1.9])
+    if (near < (keeper ? 10 : 22)) points.push([p.x, p.y, 1.9])
   }
   for (const [x, y] of extraPoints) points.push([x, y, 0.2])
 
@@ -367,7 +367,7 @@ export function cameraTarget(world, youId, facingUp, aspect, fov, extraPoints = 
     const height = (portrait ? 7.5 : 6.2) + extra * 0.5
     const camZ = Math.max(nearest - back, along(dir > 0 ? -12 : 64)) * dir
     pos = new THREE.Vector3(camX, height, camZ)
-    look = new THREE.Vector3(lookX, 0, camZ + dir * (back + 11))
+    look = new THREE.Vector3(lookX, 0, camZ + dir * (back + 7))
     probe.position.copy(pos)
     probe.lookAt(look)
     probe.updateMatrixWorld()
