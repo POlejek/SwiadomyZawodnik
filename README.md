@@ -130,6 +130,18 @@ Postęp jest zapisany w pamięci przeglądarki na danym urządzeniu. Konta i syn
   podsumowanie decyzji i zasady do zapamiętania. Rekord zapisuje się w przeglądarce.
 - Odpowiedzi są tasowane przy każdej grze, żeby uczyć się piłki, a nie położenia przycisku. Skróty: klawisze 1–4 / A–D.
 
+## Widok 3D „z oczu zawodnika”
+
+Domyślnie sytuacja jest pokazana w 3D: ciemne boisko, proste postacie i kamera za plecami zawodnika „TY”, skierowana
+tam, gdzie gra (w ataku na bramkę rywala, w obronie w stronę rywali). Kamera zaczyna blisko, jak spojrzenie zza
+ramienia, i odsuwa się tylko na tyle, żeby w kadrze był TY, piłka, zawodnicy przy piłce i rysunki trenerskie.
+
+- Przycisk **2D / 3D** w rogu boiska przełącza widok w trakcie gry: 3D to perspektywa zawodnika, 2D to tablica
+  trenerska z góry. Wybór zapisuje się w ustawieniach (*Widok boiska* na ekranie startowym).
+- Silnik animacji jest wspólny, więc każda sytuacja działa w obu widokach bez zmian w jej pliku.
+- Biblioteka three.js ładuje się dopiero przy pierwszym widoku 3D. Gdy przeglądarka nie obsługuje WebGL albo
+  widok 3D się nie uruchomi, gra sama pokazuje boisko 2D.
+
 ## Uruchomienie
 
 ```bash
@@ -160,6 +172,8 @@ src/
     validate.js            kontrola błędów w nowych sytuacjach (uruchamiana w testach)
   components/
     Pitch.jsx         boisko w SVG: linie, zawodnicy, piłka, rysunki trenerskie
+    Pitch3D.jsx       to samo w 3D (three.js): postacie, kamera za zawodnikiem, napisy jako banery
+    PitchView.jsx     wybór widoku 2D / 3D i przełącznik na boisku
     GameScreen.jsx    ekran gry: animacja, pytanie, odpowiedzi, wyjaśnienie, podsumowanie
     Home.jsx          ekran startowy z listą sytuacji
 ```

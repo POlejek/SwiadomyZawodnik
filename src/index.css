@@ -214,3 +214,40 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .you-ring, .caption, .caption-goal, .card-shine { animation: none; }
 }
+
+/* ---------- 3D view ---------- */
+.pitch3d {
+  @apply overflow-hidden rounded-xl;
+  aspect-ratio: 74 / 60;
+  background: #0a1310;
+}
+.pitch3d-you {
+  @apply pointer-events-none absolute left-0 top-0 whitespace-nowrap rounded-full bg-yellow-300 px-2 py-0.5 text-[11px] font-black text-slate-900 shadow-lg;
+  transition: opacity 0.2s;
+}
+.pitch3d-label {
+  @apply pointer-events-none absolute left-0 top-0 whitespace-nowrap rounded-md bg-slate-950/80 px-1.5 py-0.5 text-[11px] font-extrabold sm:text-xs;
+}
+.banner3d {
+  @apply rounded-lg px-3 py-1 text-sm font-black uppercase tracking-wide text-white shadow-xl sm:px-4 sm:text-xl;
+  animation: caption-in 0.25s ease-out;
+}
+.banner3d-info {
+  @apply bg-sky-500;
+}
+.banner3d-good {
+  @apply bg-lime-400 text-slate-900;
+}
+.banner3d-bad {
+  @apply bg-red-600;
+}
+.banner3d-goal {
+  @apply px-6 py-1.5 text-3xl tracking-widest sm:text-5xl;
+  animation: goal-in 0.35s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+.view-switch {
+  @apply absolute bottom-2 right-2 rounded-lg border border-white/20 bg-slate-950/75 px-2.5 py-1 text-xs font-black text-white backdrop-blur transition hover:bg-slate-800;
+}
+@media (prefers-reduced-motion: reduce) {
+  .banner3d, .banner3d-goal { animation: none; }
+}
